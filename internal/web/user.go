@@ -3,10 +3,12 @@
 package web
 
 import (
+	"fmt"
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"strings"
 	"webook/internal/domain"
 	"webook/internal/service"
 )
@@ -14,6 +16,8 @@ import (
 const (
 	emailRegexPattern    = `^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$`
 	passwordRegexPattern = `^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,}$`
+	maxAboutMeRune       = 200
+	maxNickNameRune      = 10
 )
 
 type UserHandler struct {
@@ -46,8 +50,8 @@ func (h *UserHandler) RegisterRoutes(server *gin.Engine) {
 
 func (h *UserHandler) Login(ctx *gin.Context) {
 	type LoginReq struct {
-		Email    string
-		Password string
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 	var req LoginReq
 	err := ctx.Bind(&req)
@@ -80,7 +84,31 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 }
 
 func (h *UserHandler) Profile(ctx *gin.Context) {
-	ctx.String(http.StatusOK, "进入 profile")
+	type UserInfoResp struct {
+		NickName    string
+		Email       string
+		PhoneNumber string
+		Birthday    string
+		AboutMe     string
+	}
+	sess := sessions.Default(ctx)
+	userId := sess.Get("userId").(int64)
+	u, err := h.svc.GetUserInfo(ctx, userId)
+	if err != nil {
+		return
+	}
+	switch err {
+	case nil:
+		ctx.JSON(http.StatusOK, UserInfoResp{
+			NickName: u.NickName,
+			Email:    u.Email,
+			Birthday: u.Birthday,
+			AboutMe:  u.AboutMe,
+		})
+	default:
+		ctx.String(http.StatusOK, "系统错误")
+	}
+
 }
 
 func (h *UserHandler) SignUp(ctx *gin.Context) {
@@ -129,7 +157,6 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 
 	switch err {
 	case nil:
-
 		ctx.String(http.StatusOK, "注册成功")
 	case service.ErrDuplicateEmail:
 		ctx.String(http.StatusOK, "该邮箱已被注册")
@@ -140,5 +167,37 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 }
 
 func (h *UserHandler) Edit(ctx *gin.Context) {
+	type EditReq struct {
+		NickName string `json:"nickname"`
+		Birthday string `json:"birthday"`
+		AboutMe  string `json:"aboutMe"`
+	}
 
+	var req EditReq
+	err := ctx.Bind(&req)
+	if err != nil {
+		return
+	}
+
+	// 输入检查
+	birthdayParts := strings.Split(req.Birthday, "-")
+	req.Birthday = fmt.Sprintf("%04s-%02s-%02s", birthdayParts[0], birthdayParts[1], birthdayParts[2])
+	if len([]rune(req.NickName)) >= maxNickNameRune {
+		ctx.String(http.StatusOK, "昵称过长，请保持在10个字符（包括英文）以内")
+		return
+	}
+	if len([]rune(req.AboutMe)) >= maxAboutMeRune {
+		ctx.String(http.StatusOK, "简介过长，请保持在200个字符（包括英文）以内")
+		return
+	}
+
+	sess := sessions.Default(ctx)
+	userId := sess.Get("userId").(int64)
+	err = h.svc.EditUserInfo(ctx, userId, req.NickName, req.Birthday, req.AboutMe)
+	switch err {
+	case nil:
+		ctx.String(http.StatusOK, "提交成功")
+	default:
+		ctx.String(http.StatusOK, "系统错误")
+	}
 }

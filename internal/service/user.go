@@ -51,3 +51,15 @@ func (svc *UserService) Login(ctx *gin.Context, email string, password string) (
 	}
 	return u, nil
 }
+
+func (svc *UserService) EditUserInfo(ctx *gin.Context, userID int64, name string, birthday string, me string) error {
+	return svc.repo.EditUserInfo(ctx, userID, name, birthday, me)
+}
+
+func (svc *UserService) GetUserInfo(ctx *gin.Context, userID int64) (domain.User, error) {
+	u, err := svc.repo.FindUserInfoById(ctx, userID)
+	if err != nil {
+		return domain.User{}, err
+	}
+	return u, nil
+}
