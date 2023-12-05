@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # 这是个 deployment
+  name: webook
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: webook
+  template:
+    metadata:
+      labels:
+        # 必须与 selector 的 matchLabels 匹配上
+        app: webook
+    # Pod 模板
+    spec:
+      containers:
+        - name: webook
+          image: harmonic/webook:v0.0.1
+          ports:
+            - containerPort: 8080
+
+
+

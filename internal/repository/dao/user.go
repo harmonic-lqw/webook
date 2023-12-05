@@ -36,9 +36,9 @@ type User struct {
 	Utime int64
 
 	// 编辑字段
-	NickName string
+	NickName string `gorm:"type=varchar(128)"`
 	Birthday int64
-	AboutMe  string
+	AboutMe  string `gorm:"type=varchar(4096)"`
 }
 
 func (dao *UserDAO) Insert(ctx context.Context, user User) error {

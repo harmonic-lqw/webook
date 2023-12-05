@@ -8,10 +8,6 @@ import (
 	"webook/internal/repository/dao"
 )
 
-const (
-	dateFormat = "2006-01-02"
-)
-
 var (
 	ErrDuplicateEmail = dao.ErrDuplicateEmail
 	ErrUserNotFound   = dao.ErrRecordNotFound
@@ -51,7 +47,7 @@ func (repo *UserRepository) toDomain(u dao.User) domain.User {
 		birthTime := time.Unix(0, u.Birthday*int64(time.Millisecond))
 
 		// 将 time.Time 类型转换为字符串
-		birthdaySting = birthTime.Format(dateFormat)
+		birthdaySting = birthTime.Format(time.DateOnly)
 	}
 	return domain.User{
 		Id:       u.Id,
@@ -64,7 +60,7 @@ func (repo *UserRepository) toDomain(u dao.User) domain.User {
 }
 
 func (repo *UserRepository) EditUserInfo(ctx *gin.Context, userID int64, name string, birthday string, me string) error {
-	birth, _ := time.ParseInLocation(dateFormat, birthday, time.Local)
+	birth, _ := time.ParseInLocation(time.DateOnly, birthday, time.Local)
 	birthUnix := birth.UnixMilli()
 
 	var user = dao.User{

@@ -7,8 +7,10 @@ import (
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	jwt "github.com/golang-jwt/jwt/v5"
 	"net/http"
 	"strings"
+	"time"
 	"webook/internal/domain"
 	"webook/internal/service"
 )
@@ -41,10 +43,11 @@ func (h *UserHandler) RegisterRoutes(server *gin.Engine) {
 	//server.GET("/users/profile", h.Profile)
 
 	ug := server.Group("/users")
-	ug.POST("/login", h.Login)
+	//ug.POST("/login", h.Login)
+	ug.POST("/login", h.LoginJWT)
 	ug.POST("/signup", h.SignUp)
 	ug.POST("/edit", h.Edit)
-	ug.GET("/profile", h.Profile)
+	ug.GET("/profile", h.ProfileJWT)
 
 }
 
@@ -72,6 +75,7 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 		err = sess.Save()
 		if err != nil {
 			ctx.String(http.StatusOK, "服务器异常")
+			return
 		}
 
 		ctx.String(http.StatusOK, "登录成功")
@@ -83,9 +87,52 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 
 }
 
+func (h *UserHandler) LoginJWT(ctx *gin.Context) {
+	type LoginReq struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	var req LoginReq
+	err := ctx.Bind(&req)
+	if err != nil {
+		return
+	}
+
+	u, err := h.svc.Login(ctx, req.Email, req.Password)
+
+	switch err {
+	case nil:
+		uc := UserClaims{
+			UserId:    u.Id,
+			UserAgent: ctx.GetHeader("User-Agent"),
+			RegisteredClaims: jwt.RegisteredClaims{
+				// 30分钟后过期
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
+			},
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
+		tokenStr, err := token.SignedString(JWTKey)
+		if err != nil {
+			ctx.String(http.StatusOK, "系统错误")
+		}
+
+		ctx.Header("x-jwt-token", tokenStr)
+		ctx.String(http.StatusOK, "登录成功")
+	case service.ErrInvalidUserOrPassword:
+		ctx.String(http.StatusOK, "用户不存在或密码错误")
+	default:
+		ctx.String(http.StatusOK, "系统错误")
+	}
+
+}
+
+func (h *UserHandler) ProfileJWT(ctx *gin.Context) {
+	ctx.String(http.StatusOK, "test ProfileJWT")
+}
+
 func (h *UserHandler) Profile(ctx *gin.Context) {
 	type UserInfoResp struct {
-		NickName    string
+		Nickname    string
 		Email       string
 		PhoneNumber string
 		Birthday    string
@@ -100,7 +147,7 @@ func (h *UserHandler) Profile(ctx *gin.Context) {
 	switch err {
 	case nil:
 		ctx.JSON(http.StatusOK, UserInfoResp{
-			NickName: u.NickName,
+			Nickname: u.NickName,
 			Email:    u.Email,
 			Birthday: u.Birthday,
 			AboutMe:  u.AboutMe,
@@ -169,7 +216,7 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 func (h *UserHandler) Edit(ctx *gin.Context) {
 	type EditReq struct {
 		NickName string `json:"nickname"`
-		Birthday string `json:"birthday"`
+		Birthday string `json:"birthday"` // 对生日的格式化(string2time)和反格式化在repository进行，但建议在web这一层
 		AboutMe  string `json:"aboutMe"`
 	}
 
@@ -180,8 +227,12 @@ func (h *UserHandler) Edit(ctx *gin.Context) {
 	}
 
 	// 输入检查
+	// 校验生日
 	birthdayParts := strings.Split(req.Birthday, "-")
 	req.Birthday = fmt.Sprintf("%04s-%02s-%02s", birthdayParts[0], birthdayParts[1], birthdayParts[2])
+
+	// 其实这种检验在前端进行即可
+	// 虽然考虑到有些攻击者绕开前端，但是数据库层面是有对数据长度的限制的，如果超出长度，会返回系统错误，而对于攻击者，无需考虑其用户体验（对该错误进行判断和提示）
 	if len([]rune(req.NickName)) >= maxNickNameRune {
 		ctx.String(http.StatusOK, "昵称过长，请保持在10个字符（包括英文）以内")
 		return
@@ -200,4 +251,12 @@ func (h *UserHandler) Edit(ctx *gin.Context) {
 	default:
 		ctx.String(http.StatusOK, "系统错误")
 	}
+}
+
+var JWTKey = []byte("pBnSDaa0oCypBlPSpSoATWB4VZIS9niS")
+
+type UserClaims struct {
+	jwt.RegisteredClaims
+	UserId    int64
+	UserAgent string
 }
