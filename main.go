@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 	"net/http"
 	"time"
+	"webook/config"
 	"webook/internal/repository"
 	"webook/internal/repository/dao"
 	"webook/internal/service"
@@ -20,18 +21,18 @@ import (
 )
 
 func main() {
-	//db := initDB()
-	//
-	//server := initWebServer()
-	//
-	//initUserHdl(db, server)
+	db := initDB()
 
-	server := gin.Default()
+	server := initWebServer()
+
+	initUserHdl(db, server)
+
+	//server := gin.Default()
 	server.GET("/hello", func(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "成功部署")
 	})
 
-	server.Run(":8080")
+	server.Run(":8081")
 }
 
 func initUserHdl(db *gorm.DB, server *gin.Engine) {
@@ -44,7 +45,8 @@ func initUserHdl(db *gorm.DB, server *gin.Engine) {
 }
 
 func initDB() *gorm.DB {
-	db, err := gorm.Open(mysql.Open("root:123456@tcp(127.0.0.1:13316)/webook"))
+	db, err := gorm.Open(mysql.Open(config.Config.DB.DSN))
+	//db, err := gorm.Open(mysql.Open(config.NoKSConfig.DB.DSN))
 	if err != nil {
 		panic(err)
 	}
@@ -74,7 +76,8 @@ func initWebServer() *gin.Engine {
 	)
 
 	redisClient := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
+		Addr: config.Config.Redis.Addr,
+		//Addr: config.NoKSConfig.Redis.Addr,
 	})
 
 	server.Use(ratelimit.NewBuilder(redisClient, time.Second, 100).Build())

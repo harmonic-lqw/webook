@@ -1,0 +1,16 @@
+# PV 表大我是一个什么样的存储结构
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: webook-mysql-pvc
+spec:
+  storageClassName: manual
+  # 本 PV 的存储容量
+  capacity:
+    storage: 1Gi
+  # 本 PV 支持的访问方式
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    # 本 PV 的根目录
+    path: "/mnt/data"

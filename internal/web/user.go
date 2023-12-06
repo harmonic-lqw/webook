@@ -47,6 +47,7 @@ func (h *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug.POST("/login", h.LoginJWT)
 	ug.POST("/signup", h.SignUp)
 	ug.POST("/edit", h.Edit)
+	//ug.GET("/profile", h.Profile)
 	ug.GET("/profile", h.ProfileJWT)
 
 }
@@ -115,7 +116,7 @@ func (h *UserHandler) LoginJWT(ctx *gin.Context) {
 		if err != nil {
 			ctx.String(http.StatusOK, "系统错误")
 		}
-
+		ctx.Set("user", uc)
 		ctx.Header("x-jwt-token", tokenStr)
 		ctx.String(http.StatusOK, "登录成功")
 	case service.ErrInvalidUserOrPassword:
@@ -127,23 +128,39 @@ func (h *UserHandler) LoginJWT(ctx *gin.Context) {
 }
 
 func (h *UserHandler) ProfileJWT(ctx *gin.Context) {
-	ctx.String(http.StatusOK, "test ProfileJWT")
+	type UserInfoResp struct {
+		Nickname string
+		Email    string
+		Phone    string
+		Birthday string
+		AboutMe  string
+	}
+	uc := ctx.MustGet("user").(UserClaims)
+	u, err := h.svc.GetUserInfo(ctx, uc.UserId)
+	switch err {
+	case nil:
+		ctx.JSON(http.StatusOK, UserInfoResp{
+			Nickname: u.NickName,
+			Email:    u.Email,
+			Birthday: u.Birthday,
+			AboutMe:  u.AboutMe,
+		})
+	default:
+		ctx.String(http.StatusOK, "系统错误")
+	}
 }
 
 func (h *UserHandler) Profile(ctx *gin.Context) {
 	type UserInfoResp struct {
-		Nickname    string
-		Email       string
-		PhoneNumber string
-		Birthday    string
-		AboutMe     string
+		Nickname string
+		Email    string
+		Phone    string
+		Birthday string
+		AboutMe  string
 	}
 	sess := sessions.Default(ctx)
 	userId := sess.Get("userId").(int64)
 	u, err := h.svc.GetUserInfo(ctx, userId)
-	if err != nil {
-		return
-	}
 	switch err {
 	case nil:
 		ctx.JSON(http.StatusOK, UserInfoResp{
