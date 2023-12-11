@@ -7,6 +7,6 @@ var Config = config{
 		DSN: "root:123456@tcp(webook-mysql:3308)/webook",
 	},
 	Redis: RedisConfig{
-		Addr: "webook-redis:6380",
+		Addr: "webook-redis:6379",
 	},
 }

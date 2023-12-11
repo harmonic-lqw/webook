@@ -46,7 +46,8 @@ func (h *UserHandler) RegisterRoutes(server *gin.Engine) {
 	//ug.POST("/login", h.Login)
 	ug.POST("/login", h.LoginJWT)
 	ug.POST("/signup", h.SignUp)
-	ug.POST("/edit", h.Edit)
+	//ug.POST("/edit", h.Edit)
+	ug.POST("/edit", h.EditJWT)
 	//ug.GET("/profile", h.Profile)
 	ug.GET("/profile", h.ProfileJWT)
 
@@ -262,6 +263,45 @@ func (h *UserHandler) Edit(ctx *gin.Context) {
 	sess := sessions.Default(ctx)
 	userId := sess.Get("userId").(int64)
 	err = h.svc.EditUserInfo(ctx, userId, req.NickName, req.Birthday, req.AboutMe)
+	switch err {
+	case nil:
+		ctx.String(http.StatusOK, "提交成功")
+	default:
+		ctx.String(http.StatusOK, "系统错误")
+	}
+}
+
+func (h *UserHandler) EditJWT(ctx *gin.Context) {
+	type EditReq struct {
+		NickName string `json:"nickname"`
+		Birthday string `json:"birthday"` // 对生日的格式化(string2time)和反格式化在repository进行，但建议在web这一层
+		AboutMe  string `json:"aboutMe"`
+	}
+
+	var req EditReq
+	err := ctx.Bind(&req)
+	if err != nil {
+		return
+	}
+
+	// 输入检查
+	// 校验生日
+	birthdayParts := strings.Split(req.Birthday, "-")
+	req.Birthday = fmt.Sprintf("%04s-%02s-%02s", birthdayParts[0], birthdayParts[1], birthdayParts[2])
+
+	// 其实这种检验在前端进行即可
+	// 虽然考虑到有些攻击者绕开前端，但是数据库层面是有对数据长度的限制的，如果超出长度，会返回系统错误，而对于攻击者，无需考虑其用户体验（对该错误进行判断和提示）
+	if len([]rune(req.NickName)) >= maxNickNameRune {
+		ctx.String(http.StatusOK, "昵称过长，请保持在10个字符（包括英文）以内")
+		return
+	}
+	if len([]rune(req.AboutMe)) >= maxAboutMeRune {
+		ctx.String(http.StatusOK, "简介过长，请保持在200个字符（包括英文）以内")
+		return
+	}
+
+	uc := ctx.MustGet("user").(UserClaims)
+	err = h.svc.EditUserInfo(ctx, uc.UserId, req.NickName, req.Birthday, req.AboutMe)
 	switch err {
 	case nil:
 		ctx.String(http.StatusOK, "提交成功")

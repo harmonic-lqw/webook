@@ -4,7 +4,7 @@ metadata:
   # 这是个 deployment
   name: webook
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
       app: webook
@@ -19,7 +19,7 @@ spec:
         - name: webook
           image: harmonic/webook:v0.0.1
           ports:
-            - containerPort: 8081
+            - containerPort: 8080
 
 
 
