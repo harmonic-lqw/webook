@@ -4,13 +4,18 @@ go 1.20
 
 require (
 	github.com/dlclark/regexp2 v1.10.0
+	github.com/ecodeclub/ekit v0.0.8
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-contrib/sessions v0.0.5
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/golang-jwt/jwt/v5 v5.2.0
+	github.com/google/wire v0.5.0
+	github.com/hashicorp/golang-lru v1.0.2
 	github.com/redis/go-redis/v9 v9.3.0
 	github.com/stretchr/testify v1.8.3
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.822
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sms v1.0.822
 	golang.org/x/crypto v0.9.0
 	gorm.io/driver/mysql v1.5.2
 	gorm.io/gorm v1.25.5

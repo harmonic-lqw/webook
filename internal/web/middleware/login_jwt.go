@@ -17,7 +17,10 @@ func (m *LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		path := ctx.Request.URL.Path
 		// 不需要登录校验
-		if path == "/users/signup" || path == "/users/login" {
+		if path == "/users/signup" ||
+			path == "/users/login" ||
+			path == "/users/login_sms" ||
+			path == "/users/login_sms/code/send" {
 			return
 		}
 		authCode := ctx.GetHeader("Authorization")
@@ -52,6 +55,7 @@ func (m *LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 			return
 		}
 
+		// 压测 profile 要关闭
 		// 解析出来的 User-Agent（它一定是登录时放入的，因为如果 jwt-token 被修改，是不会解析成功的） != 该次请求携带的 User-Agent
 		if uc.UserAgent != ctx.GetHeader("User-Agent") {
 			// 只要进来这个分支，大概率是攻击者，也有可能是浏览器升级等

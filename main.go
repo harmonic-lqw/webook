@@ -1,97 +1,20 @@
 package main
 
 import (
-	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
-	"net/http"
-	"time"
-	"webook/config"
-	"webook/internal/repository"
-	"webook/internal/repository/dao"
-	"webook/internal/service"
-	"webook/internal/web"
 	"webook/internal/web/middleware"
-	"webook/pkg/ginx/middleware/ratelimit"
-
-	"github.com/redis/go-redis/v9"
 )
 
 func main() {
-	db := initDB()
+	server := InitWebServer()
 
-	server := initWebServer()
-
-	initUserHdl(db, server)
-
-	//server := gin.Default()
-	server.GET("/hello", func(ctx *gin.Context) {
-		ctx.String(http.StatusOK, "成功部署")
-	})
+	//server.GET("/hello", func(ctx *gin.Context) {
+	//	//	ctx.String(http.StatusOK, "成功部署")
+	//	//})
 
 	server.Run(":8080")
-}
-
-func initUserHdl(db *gorm.DB, server *gin.Engine) {
-	ud := dao.NewUserDAO(db)
-	ur := repository.NewUserRepository(ud)
-	us := service.NewUserService(ur)
-
-	hdl := web.NewUserHandler(us)
-	hdl.RegisterRoutes(server)
-}
-
-func initDB() *gorm.DB {
-	db, err := gorm.Open(mysql.Open(config.Config.DB.DSN))
-	//db, err := gorm.Open(mysql.Open(config.NoKSConfig.DB.DSN))
-	if err != nil {
-		panic(err)
-	}
-	err = dao.InitTables(db)
-	if err != nil {
-		panic(err)
-	}
-	return db
-}
-
-func initWebServer() *gin.Engine {
-	server := gin.Default()
-
-	server.Use(
-		cors.New(cors.Config{
-			//AllowAllOrigins: true,
-			//AllowOrigins:     []string{"http://localhost:3000"},
-			AllowCredentials: true,
-			AllowHeaders:     []string{"authorization", "content-type"},
-
-			ExposeHeaders: []string{"x-jwt-token"}, // 允许前端访问后端响应中带的头部
-			AllowOriginFunc: func(origin string) bool {
-				return true
-			},
-			MaxAge: 12 * time.Hour,
-		}),
-	)
-
-	redisClient := redis.NewClient(&redis.Options{
-		Addr: config.Config.Redis.Addr,
-		//Addr: config.NoKSConfig.Redis.Addr,
-	})
-
-	server.Use(ratelimit.NewBuilder(redisClient, time.Second, 100).Build())
-
-	useJWT(server)
-	//useSession(server)
-
-	return server
-}
-
-func useJWT(server *gin.Engine) {
-	// 登录校验
-	login := &middleware.LoginJWTMiddlewareBuilder{}
-	server.Use(login.CheckLogin())
 }
 
 func useSession(server *gin.Engine) {

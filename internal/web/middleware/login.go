@@ -17,7 +17,10 @@ func (m *LoginMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		path := ctx.Request.URL.Path
 		// 不需要登录校验
-		if path == "/users/signup" || path == "/users/login" {
+		if path == "/users/signup" ||
+			path == "/users/login" ||
+			path == "/users/login_sms" ||
+			path == "/users/login_sms/code/send" {
 			return
 		}
 		sess := sessions.Default(ctx)
