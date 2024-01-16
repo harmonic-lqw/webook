@@ -84,6 +84,7 @@ func (h *UserHandler) SendSMSLoginCode(ctx *gin.Context) {
 			Code: 4,
 			Msg:  "短信发送太频繁，请稍后再试",
 		})
+	// errors.New("验证码存在，但是没有过期时间") 也会进来这个分支
 	default:
 		ctx.JSON(http.StatusOK, Result{
 			Code: 5,

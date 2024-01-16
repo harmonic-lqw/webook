@@ -21,14 +21,14 @@ func InitWebServer() *gin.Engine {
 
 		// Dao 和 Cache
 		dao.NewUserDAO,
-		//cache.NewRedisUserCache, cache.NewRedisCodeCache,
+		cache.NewRedisUserCache, cache.NewRedisCodeCache,
 		// LocalCodeCache
-		ioc.InitLRU,
-		ioc.InitExpireTime,
-		cache.NewRedisUserCache, cache.NewLocalCodeCache,
+		//ioc.InitLRU,
+		//ioc.InitExpireTime,
+		//cache.NewRedisUserCache, cache.NewLocalCodeCache,
 
 		// Repository
-		repository.NewCachedUserRepository, repository.NewCodeRepository,
+		repository.NewCachedUserRepository, repository.NewCachedCodeRepository,
 
 		// Service
 		ioc.InitSMSService, service.NewUserService, service.NewCodeService,

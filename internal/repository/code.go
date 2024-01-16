@@ -19,7 +19,7 @@ type CachedCodeRepository struct {
 	cache cache.CodeCache
 }
 
-func NewCodeRepository(c cache.CodeCache) CodeRepository {
+func NewCachedCodeRepository(c cache.CodeCache) CodeRepository {
 	return &CachedCodeRepository{
 		cache: c,
 	}

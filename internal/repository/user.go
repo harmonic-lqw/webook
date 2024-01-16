@@ -89,6 +89,7 @@ func (repo *CachedUserRepository) FindUserInfoById(ctx context.Context, userID i
 	// 刷新 redis
 	err = repo.cache.Set(ctx, du) // 性能优化：redis 缓存方案
 	if err != nil {
+		// 网络崩了，也可能是 redis 崩了
 		log.Println(err)
 	}
 
@@ -111,6 +112,7 @@ func (repo *CachedUserRepository) FindUserInfoByIdV1(ctx context.Context, userID
 		// 刷新 redis
 		err = repo.cache.Set(ctx, du) // 性能优化：redis 缓存方案
 		if err != nil {
+			// 网络崩了，也可能是 redis 崩了
 			log.Println(err)
 		}
 		return du, nil
@@ -158,13 +160,13 @@ func (repo *CachedUserRepository) toEntity(u domain.User) dao.User {
 }
 
 func (repo *CachedUserRepository) toDomain(u dao.User) domain.User {
-	var birthdaySting string
+	var birthdayString string
 	if u.Birthday != int64(0) {
 		// 将 Unix 时间戳转换为 time.Time 类型
 		birthTime := time.Unix(0, u.Birthday*int64(time.Millisecond))
 
 		// 将 time.Time 类型转换为字符串
-		birthdaySting = birthTime.Format(time.DateOnly)
+		birthdayString = birthTime.Format(time.DateOnly)
 	}
 	return domain.User{
 		Id:       u.Id,
@@ -173,6 +175,7 @@ func (repo *CachedUserRepository) toDomain(u dao.User) domain.User {
 		Password: u.Password,
 		NickName: u.NickName,
 		AboutMe:  u.AboutMe,
-		Birthday: birthdaySting,
+		Birthday: birthdayString,
+		Ctime:    time.UnixMilli(u.Ctime),
 	}
 }

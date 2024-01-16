@@ -3,11 +3,6 @@
   <component name="Go" enabled="true">
     <buildTags>
       <option name="os" value="windows" />
-      <option name="customFlags">
-        <array>
-          <option value="k8s" />
-        </array>
-      </option>
     </buildTags>
   </component>
   <component name="NewModuleRootManager">

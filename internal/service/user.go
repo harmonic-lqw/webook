@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"webook/internal/domain"
 	"webook/internal/repository"
@@ -16,9 +15,9 @@ var (
 
 type UserService interface {
 	SignUp(ctx context.Context, u domain.User) error
-	Login(ctx *gin.Context, email string, password string) (domain.User, error)
-	EditUserInfo(ctx *gin.Context, userID int64, name string, birthday string, me string) error
-	GetUserInfo(ctx *gin.Context, userID int64) (domain.User, error)
+	Login(ctx context.Context, email string, password string) (domain.User, error)
+	EditUserInfo(ctx context.Context, userID int64, name string, birthday string, me string) error
+	GetUserInfo(ctx context.Context, userID int64) (domain.User, error)
 	FindOrCreate(ctx context.Context, phone string) (domain.User, error)
 }
 
@@ -44,7 +43,7 @@ func (svc *userService) SignUp(ctx context.Context, u domain.User) error {
 	return svc.repo.Create(ctx, u)
 }
 
-func (svc *userService) Login(ctx *gin.Context, email string, password string) (domain.User, error) {
+func (svc *userService) Login(ctx context.Context, email string, password string) (domain.User, error) {
 	u, err := svc.repo.FindByEmail(ctx, email)
 	if errors.Is(err, repository.ErrUserNotFound) {
 		return domain.User{}, ErrInvalidUserOrPassword
@@ -60,11 +59,11 @@ func (svc *userService) Login(ctx *gin.Context, email string, password string) (
 	return u, nil
 }
 
-func (svc *userService) EditUserInfo(ctx *gin.Context, userID int64, name string, birthday string, me string) error {
+func (svc *userService) EditUserInfo(ctx context.Context, userID int64, name string, birthday string, me string) error {
 	return svc.repo.EditUserInfo(ctx, userID, name, birthday, me)
 }
 
-func (svc *userService) GetUserInfo(ctx *gin.Context, userID int64) (domain.User, error) {
+func (svc *userService) GetUserInfo(ctx context.Context, userID int64) (domain.User, error) {
 	u, err := svc.repo.FindUserInfoById(ctx, userID)
 	if err != nil {
 		return domain.User{}, err

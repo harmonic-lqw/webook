@@ -8,6 +8,7 @@ import (
 	"webook/internal/web"
 	"webook/internal/web/middleware"
 	"webook/pkg/ginx/middleware/ratelimit"
+	"webook/pkg/limiter"
 )
 
 func InitWebServer(mdls []gin.HandlerFunc, userHdl *web.UserHandler) *gin.Engine {
@@ -31,7 +32,7 @@ func InitGinMiddlewares(redisClient redis.Cmdable) []gin.HandlerFunc {
 			},
 			MaxAge: 12 * time.Hour,
 		}),
-		ratelimit.NewBuilder(redisClient, time.Second, 1000).Build(),
+		ratelimit.NewBuilder(limiter.NewRedisSlidingWindowLimiter(redisClient, time.Second, 1000)).Build(),
 		(&middleware.LoginJWTMiddlewareBuilder{}).CheckLogin(),
 	}
 }

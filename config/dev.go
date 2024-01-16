@@ -1,6 +1,8 @@
+//go:build !k8s
+
 package config
 
-var NoKSConfig = config{
+var Config = config{
 	DB: DBConfig{
 		DSN: "root:123456@tcp(localhost:13316)/webook",
 	},
