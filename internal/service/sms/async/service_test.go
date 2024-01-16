@@ -79,12 +79,15 @@ func TestAsyncService_Send(t *testing.T) {
 			svc, repo, logV1 := tc.mock(ctrl)
 
 			asvc := NewService(svc, repo, logV1)
+			// 设置预期输入
 			asvc.signAsync = tc.signAsync
 			asvc.errCnt = tc.errCnt
 			asvc.reqCnt = tc.reqCnt
 			asvc.keep = tc.keep
 
 			err := asvc.Send(context.Background(), "123", []string{"234"}, "345")
+
+			// 对比预期输出
 			assert.Equal(t, tc.wantErr, err)
 			assert.Equal(t, tc.wantSignAsync, asvc.signAsync)
 			assert.Equal(t, tc.wantReqCnt, asvc.reqCnt)
