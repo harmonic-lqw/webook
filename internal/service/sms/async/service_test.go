@@ -10,14 +10,14 @@ import (
 	repomocks "webook/internal/repository/mocks"
 	"webook/internal/service/sms"
 	smsmocks "webook/internal/service/sms/mocks"
-	"webook/pkg/logger"
 	loggermocks "webook/pkg/logger/mocks"
+	"webook/pkg/logger/old"
 )
 
 func TestAsyncService_Send(t *testing.T) {
 	testCases := []struct {
 		name string
-		mock func(ctrl *gomock.Controller) (sms.Service, repository.AsyncSmsRepository, logger.LoggerV1)
+		mock func(ctrl *gomock.Controller) (sms.Service, repository.AsyncSmsRepository, old.LoggerV1)
 
 		signAsync bool
 		errCnt    int32
@@ -33,7 +33,7 @@ func TestAsyncService_Send(t *testing.T) {
 	}{
 		{
 			name: "异步发送成功",
-			mock: func(ctrl *gomock.Controller) (sms.Service, repository.AsyncSmsRepository, logger.LoggerV1) {
+			mock: func(ctrl *gomock.Controller) (sms.Service, repository.AsyncSmsRepository, old.LoggerV1) {
 				svc := smsmocks.NewMockService(ctrl)
 				repo := repomocks.NewMockAsyncSmsRepository(ctrl)
 				logV1 := loggermocks.NewMockLoggerV1(ctrl)

@@ -6,6 +6,7 @@ import (
 	"github.com/ecodeclub/ekit"
 	"github.com/ecodeclub/ekit/slice"
 	sms "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sms/v20210111"
+	"go.uber.org/zap"
 )
 
 type Service struct {
@@ -23,6 +24,11 @@ func (s *Service) Send(ctx context.Context, tplId string, args []string, numbers
 	request.TemplateParamSet = s.toPtrSlice(args)
 	request.PhoneNumberSet = s.toPtrSlice(numbers)
 	response, err := s.client.SendSms(request)
+	// 日志打印 Debug
+	// 在和第三方打交道时候，通常打印 Debug 信息
+	zap.L().Debug("请求腾讯 SendSms 接口",
+		zap.Any("req", request),
+		zap.Any("resp", response))
 	// 处理异常
 	if err != nil {
 		fmt.Printf("An API error has returned: %s", err)

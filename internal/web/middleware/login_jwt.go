@@ -3,14 +3,18 @@ package middleware
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"log"
 	"net/http"
-	"strings"
-	"time"
-	"webook/internal/web"
+	ijwt "webook/internal/web/jwt"
 )
 
 type LoginJWTMiddlewareBuilder struct {
+	ijwt.Handler
+}
+
+func NewLoginJWTMiddlewareBuilder(hdl ijwt.Handler) *LoginJWTMiddlewareBuilder {
+	return &LoginJWTMiddlewareBuilder{
+		Handler: hdl,
+	}
 }
 
 func (m *LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
@@ -20,28 +24,15 @@ func (m *LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 		if path == "/users/signup" ||
 			path == "/users/login" ||
 			path == "/users/login_sms" ||
-			path == "/users/login_sms/code/send" {
+			path == "/users/login_sms/code/send" ||
+			path == "/oauth2/wechat/authurl" ||
+			path == "/oauth2/wechat/callback" {
 			return
 		}
-		authCode := ctx.GetHeader("Authorization")
-		if authCode == "" {
-			// 没登陆
-			ctx.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
-
-		segs := strings.Split(authCode, " ")
-		if len(segs) != 2 {
-			// Authorization 不合规
-			ctx.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
-
-		tokenStr := segs[1]
-
-		var uc web.UserClaims
+		tokenStr := m.ExtractToken(ctx)
+		var uc ijwt.UserClaims
 		token, err := jwt.ParseWithClaims(tokenStr, &uc, func(token *jwt.Token) (interface{}, error) {
-			return web.JWTKey, nil
+			return ijwt.JWTKey, nil
 		})
 		if err != nil {
 			// token 无法解析：token 不对， token 是伪造的
@@ -63,23 +54,31 @@ func (m *LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 			return
 		}
 
-		expireTime := uc.ExpiresAt
-		if expireTime.Before(time.Now()) {
-			// token 过期
+		err = m.CheckSession(ctx, uc.Ssid)
+		if err != nil {
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
-		// 过期时间设置 30 分钟，每 10 分钟刷新一次：当剩余过期时间小于 20 分钟时就应该刷新了
-		if expireTime.Sub(time.Now()) < time.Minute*20 {
-			uc.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Minute * 30))
-			tokenStr, err = token.SignedString(web.JWTKey)
-			ctx.Header("x-jwt-token", tokenStr)
-			if err != nil {
-				// 不要 panic 掉，因为仅仅是过期时间没有成功刷新，用户仍然处于登录状态，不影响使用
-				log.Println(err)
-			}
-		}
+		// 设置了长短 token 后不再需要这些定时刷新机制
+		//expireTime := uc.ExpiresAt
+		//if expireTime.Before(time.Now()) {
+		//	// token 过期
+		//	ctx.AbortWithStatus(http.StatusUnauthorized)
+		//	return
+		//}
+		//
+		//// 过期时间设置 30 分钟，每 10 分钟刷新一次：当剩余过期时间小于 20 分钟时就应该刷新了
+		//if expireTime.Sub(time.Now()) < time.Minute*20 {
+		//	uc.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Minute * 30))
+		//	tokenStr, err = token.SignedString(web.JWTKey)
+		//	ctx.Header("x-jwt-token", tokenStr)
+		//	if err != nil {
+		//		// 不要 panic 掉，因为仅仅是过期时间没有成功刷新，用户仍然处于登录状态，不影响使用
+		//		log.Println(err)
+		//	}
+		//}
+
 		ctx.Set("user", uc)
 
 	}

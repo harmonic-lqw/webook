@@ -6,11 +6,6 @@ type ZapLogger struct {
 	logger *zap.Logger
 }
 
-func (z *ZapLogger) With(args ...Field) LoggerV1 {
-	l := z.logger.With(z.toArgs(args)...)
-	return NewZapLogger(l)
-}
-
 func NewZapLogger(l *zap.Logger) LoggerV1 {
 	return &ZapLogger{
 		logger: l,
@@ -35,8 +30,8 @@ func (z *ZapLogger) Error(msg string, args ...Field) {
 
 func (z *ZapLogger) toArgs(args []Field) []zap.Field {
 	res := make([]zap.Field, 0, len(args))
-	for _, ar := range args {
-		res = append(res, zap.Any(ar.Key, ar.Value))
+	for _, arg := range args {
+		res = append(res, zap.Any(arg.Key, arg.Value))
 	}
 	return res
 }

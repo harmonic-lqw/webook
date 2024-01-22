@@ -16,7 +16,6 @@ func NewSMSService(svc sms.Service, key []byte) *SMSService {
 		svc: svc,
 		key: key,
 	}
-
 }
 
 func (s *SMSService) Send(ctx context.Context, tplToken string, args []string, numbers ...string) error {
