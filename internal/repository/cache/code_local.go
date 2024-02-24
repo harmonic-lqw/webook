@@ -51,7 +51,7 @@ func (lc *LocalCodeCache) Set(ctx context.Context, biz, phone, code string) erro
 		return ErrCodeSendTooMany
 	}
 
-	// 有 key 但过期了，重发
+	// 有 firstKey 但过期了，重发
 	lc.cache.Add(key, codeItem{
 		code:   code,
 		cnt:    3,

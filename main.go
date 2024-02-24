@@ -15,8 +15,16 @@ import (
 )
 
 func main() {
-	initViperRemote()
-	server := InitWebServer()
+	initViper()
+
+	app := InitWebServer()
+	for _, c := range app.consumers {
+		err := c.Start()
+		if err != nil {
+			panic(err)
+		}
+	}
+	server := app.server
 
 	//server.GET("/hello", func(ctx *gin.Context) {
 	//	//	ctx.String(http.StatusOK, "成功部署")
@@ -154,7 +162,7 @@ func initViperRemote() {
 				panic(err)
 			}
 			log.Println("watch", viper.Get("test.key"))
-			time.Sleep(time.Second * 3)
+			time.Sleep(time.Second * 5)
 		}
 	}()
 

@@ -200,7 +200,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 			userSvc, codeSvc := tc.mock(ctrl)
 
 			// 初始化 hdl
-			hdl := NewUserHandler(userSvc, codeSvc)
+			hdl := NewUserHandler(userSvc, nil, codeSvc)
 
 			// 注册路由
 			server := gin.Default()

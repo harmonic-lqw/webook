@@ -34,3 +34,10 @@ func Bool(key string, b bool) Field {
 		Value: b,
 	}
 }
+
+func Int(key string, val int) Field {
+	return Field{
+		Key:   key,
+		Value: val,
+	}
+}

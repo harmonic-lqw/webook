@@ -57,7 +57,19 @@ func (repo *CachedUserRepository) EditUserInfo(ctx context.Context, userID int64
 		Birthday: birthUnix,
 		AboutMe:  me,
 	}
-	return repo.dao.Update(ctx, user)
+	err := repo.dao.Update(ctx, user)
+	if err != nil {
+		return err
+	}
+	du := repo.toDomain(user)
+	// 刷新缓存
+	go func() {
+		err = repo.cache.Set(ctx, du)
+		if err != nil {
+			// 记录日志
+		}
+	}()
+	return nil
 }
 
 func (repo *CachedUserRepository) FindUserInfoById(ctx context.Context, userID int64) (domain.User, error) {
@@ -77,6 +89,7 @@ func (repo *CachedUserRepository) FindUserInfoById(ctx context.Context, userID i
 	if err != nil {
 		return domain.User{}, err
 	}
+
 	du = repo.toDomain(u)
 
 	// 刷新 redis 的异步写法，能够提高一些查询性能
