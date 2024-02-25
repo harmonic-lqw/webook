@@ -9,6 +9,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"strings"
 	"time"
+	"webook/pkg/ginx"
 )
 
 type RedisJWTHandler struct {
@@ -121,12 +122,7 @@ func (rh *RedisJWTHandler) CheckSession(ctx *gin.Context, ssid string) error {
 
 }
 
-type UserClaims struct {
-	jwt.RegisteredClaims
-	UserId    int64
-	Ssid      string
-	UserAgent string
-}
+type UserClaims = ginx.UserClaims
 
 type RefreshClaims struct {
 	jwt.RegisteredClaims

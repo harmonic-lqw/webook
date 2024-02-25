@@ -4,18 +4,23 @@ import (
 	"context"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redis/go-redis/v9"
+	otelgin "go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"time"
 	"webook/internal/web"
 	ijwt "webook/internal/web/jwt"
 	"webook/internal/web/middleware"
+	"webook/pkg/ginx"
+	prometheus2 "webook/pkg/ginx/middleware/prometheus"
 	"webook/pkg/ginx/middleware/ratelimit"
 	"webook/pkg/limiter"
 	"webook/pkg/logger"
 )
 
 func InitWebServer(mdls []gin.HandlerFunc,
-	userHdl *web.UserHandler, wechatHdl *web.OAuth2WechatHandler, artHdl *web.ArticleHandler) *gin.Engine {
+	userHdl *web.UserHandler, wechatHdl *web.OAuth2WechatHandler, artHdl *web.ArticleHandler, l logger.LoggerV1) *gin.Engine {
+	ginx.SetLogger(l)
 	server := gin.Default()
 	server.Use(mdls...)
 	userHdl.RegisterRoutes(server)
@@ -25,6 +30,22 @@ func InitWebServer(mdls []gin.HandlerFunc,
 }
 
 func InitGinMiddlewares(redisClient redis.Cmdable, hdl ijwt.Handler, l logger.LoggerV1) []gin.HandlerFunc {
+	pb := &prometheus2.Builder{
+		Namespace: "geektime_daming",
+		Subsystem: "webook",
+		Name:      "gin_http",
+		Help:      "统计 GIN 的 HTTP 接口数据",
+	}
+	ginx.InitCounter(prometheus.CounterOpts{
+		Namespace: "geekbang_daming",
+		Subsystem: "webook",
+		Name:      "http_biz_code",
+		Help:      "统计业务错误码",
+		ConstLabels: map[string]string{
+			"instance_id": "my_instance_1",
+		},
+	})
+
 	return []gin.HandlerFunc{
 		cors.New(cors.Config{
 			//AllowAllOrigins: true,
@@ -38,6 +59,14 @@ func InitGinMiddlewares(redisClient redis.Cmdable, hdl ijwt.Handler, l logger.Lo
 			},
 			MaxAge: 12 * time.Hour,
 		}),
+
+		// 接入 Prometheus
+		pb.BuildResponseTime(),
+		pb.BuildActiveRequest(),
+
+		// 接入 Opentelemetry
+		otelgin.Middleware("webook"),
+
 		// 限流
 		ratelimit.NewBuilder(limiter.NewRedisSlidingWindowLimiter(redisClient, time.Second, 1000)).Build(),
 		// 入口日志

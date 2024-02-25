@@ -2,20 +2,33 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"github.com/fsnotify/fsnotify"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	_ "github.com/spf13/viper/remote"
 	"log"
+	"net/http"
 	"time"
 	"webook/internal/web/middleware"
+	"webook/ioc"
 )
 
 func main() {
 	initViper()
+	initPrometheus()
+
+	tpCancel := ioc.InitOTEL()
+	defer func() {
+		// tp.Shutdown(ctx) 的调用需要清理资源等，因此本身也是耗时的，所以要控制住它
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		defer cancel()
+		tpCancel(ctx)
+	}()
 
 	app := InitWebServer()
 	for _, c := range app.consumers {
@@ -31,6 +44,14 @@ func main() {
 	//	//})
 
 	server.Run(":8080")
+}
+
+func initPrometheus() {
+	go func() {
+		// 专门给 Prometheus 开的端口，尽量不要和业务端口重合
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":8081", nil)
+	}()
 }
 
 func useSession(server *gin.Engine) {

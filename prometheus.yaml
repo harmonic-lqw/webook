@@ -1,0 +1,7 @@
+scrape_configs:
+  - job_name: "webook"
+    scrape_interval: 5s
+    scrape_timeout: 3s
+    static_configs:
+      # host.docker.internal 域名：表示 docker 的宿主机
+      - targets: ["host.docker.internal:8081"]

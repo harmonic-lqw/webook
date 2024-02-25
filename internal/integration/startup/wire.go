@@ -19,7 +19,6 @@ var thirdPartySet = wire.NewSet(
 	// 第三方依赖
 	InitRedis, InitDB, InitLogger,
 	ioc.InitSaramaClient,
-	ioc.InitSyncProducer,
 )
 
 func InitWebServer() *gin.Engine {

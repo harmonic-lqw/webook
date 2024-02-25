@@ -9,7 +9,6 @@ import (
 	"webook/internal/repository"
 	"webook/internal/service/sms"
 	"webook/pkg/logger"
-	"webook/pkg/logger/old"
 )
 
 const (
@@ -21,7 +20,7 @@ type Service struct {
 
 	// 转异步，存储发短信请求的 repository
 	repo repository.AsyncSmsRepository
-	l    old.LoggerV1
+	l    logger.LoggerV1
 
 	// 标志异步发送是否开启
 	signAsync bool
@@ -33,7 +32,7 @@ type Service struct {
 	keep int32
 }
 
-func NewService(svc sms.Service, repo repository.AsyncSmsRepository, l old.LoggerV1) *Service {
+func NewService(svc sms.Service, repo repository.AsyncSmsRepository, l logger.LoggerV1) *Service {
 	res := &Service{
 		svc:       svc,
 		repo:      repo,

@@ -11,8 +11,10 @@ import (
 	"net/http"
 	"strings"
 	"webook/internal/domain"
+	"webook/internal/errs"
 	"webook/internal/service"
 	ijwt "webook/internal/web/jwt"
+	"webook/pkg/ginx"
 )
 
 const (
@@ -57,7 +59,7 @@ func (h *UserHandler) RegisterRoutes(server *gin.Engine) {
 	//ug.POST("/login", h.Login)
 	ug.POST("/login", h.LoginJWT)
 	ug.POST("/logout", h.LogoutJWT)
-	ug.POST("/signup", h.SignUp)
+	ug.POST("/signup", ginx.WrapReq[SignUpReq](h.SignUp))
 	//ug.POST("/edit", h.Edit)
 	ug.POST("/edit", h.EditJWT)
 	//ug.GET("/profile", h.Profile)
@@ -296,62 +298,78 @@ func (h *UserHandler) Profile(ctx *gin.Context) {
 
 }
 
-func (h *UserHandler) SignUp(ctx *gin.Context) {
-	type SignUpReq struct {
-		Email           string `json:"email"`
-		Password        string `json:"password"`
-		ConfirmPassword string `json:"confirmPassword"`
-	}
+type SignUpReq struct {
+	Email           string `json:"email"`
+	Password        string `json:"password"`
+	ConfirmPassword string `json:"confirmPassword"`
+}
 
-	var req SignUpReq
-	if err := ctx.Bind(&req); err != nil {
-		ctx.Error(err)
-		// if failed -> return 400
-		return
-	}
+func (h *UserHandler) SignUp(ctx *gin.Context, req SignUpReq) (ginx.Result, error) {
+	// 使用 wrap 后，不需要再 Bind 请求了
+	//if err := ctx.Bind(&req); err != nil {
+	//	ctx.String(http.StatusOK, "系统错误")
+	//	return Result{
+	//		Code: errs.UserInternalServerError,
+	//		Msg:  "系统错误",
+	//	}, err
+	//}
 
 	isEmail, err := h.emailRegExp.MatchString(req.Email)
 
 	if err != nil {
-		ctx.Error(err)
-		ctx.String(http.StatusOK, "系统错误：邮箱匹配超时")
-		return
+		return ginx.Result{
+			Code: errs.UserInternalServerError,
+			Msg:  "系统错误，邮箱匹配超时",
+		}, err
 	}
 	if !isEmail {
-		ctx.String(http.StatusOK, "非法邮箱格式"+req.Email)
-		return
+		return ginx.Result{
+			Code: errs.UserInvalidInput,
+			Msg:  "非法邮箱格式",
+		}, err
 	}
 
 	isPassword, err := h.passwordRegExp.MatchString(req.Password)
 	if err != nil {
-		ctx.Error(err)
-		ctx.String(http.StatusOK, "系统错误：密码匹配超时")
-		return
+		return ginx.Result{
+			Code: errs.UserInternalServerError,
+			Msg:  "系统错误：密码匹配超时",
+		}, err
 	}
 	if !isPassword {
-		ctx.String(http.StatusOK, "密码格式不对：密码必须包含字母、数字、特殊字符，并且长度不能小于 8 位")
-		return
+		return ginx.Result{
+			Code: errs.UserInvalidInput,
+			Msg:  "密码格式不对：密码必须包含字母、数字、特殊字符，并且长度不能小于 8 位",
+		}, err
 	}
 
 	if req.Password != req.ConfirmPassword {
-		ctx.String(http.StatusOK, "两次输入密码不同")
-		return
+		return ginx.Result{
+			Code: errs.UserInvalidInput,
+			Msg:  "两次输入密码不同",
+		}, err
 	}
 
-	err = h.svc.SignUp(ctx, domain.User{
+	err = h.svc.SignUp(ctx.Request.Context(), domain.User{
 		Email:    req.Email,
 		Password: req.Password,
 	})
 
 	switch err {
 	case nil:
-		ctx.String(http.StatusOK, "注册成功")
+		return ginx.Result{
+			Msg: "注册成功",
+		}, nil
 	case service.ErrDuplicateUser:
-		ctx.Error(err)
-		ctx.String(http.StatusOK, "该邮箱已被注册")
+		return ginx.Result{
+			Code: errs.UserDuplicateEmail,
+			Msg:  "该邮箱已被注册",
+		}, err
 	default:
-		ctx.Error(err)
-		ctx.String(http.StatusOK, "系统错误")
+		return ginx.Result{
+			Code: errs.UserInternalServerError,
+			Msg:  "该邮箱已被注册",
+		}, err
 	}
 
 }
