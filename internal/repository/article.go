@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"github.com/ecodeclub/ekit/slice"
 	"gorm.io/gorm"
 	"time"
 	"webook/internal/domain"
@@ -17,6 +18,7 @@ type ArticleRepository interface {
 	GetByAuthor(ctx context.Context, uid int64, offset int, limit int) ([]domain.Article, error)
 	GetById(ctx context.Context, id int64) (domain.Article, error)
 	GetPubById(ctx context.Context, id int64) (domain.Article, error)
+	ListPub(ctx context.Context, start time.Time, offset, limit int) ([]domain.Article, error)
 }
 
 type CachedArticleRepository struct {
@@ -38,6 +40,16 @@ type CachedArticleRepository struct {
 	db *gorm.DB
 }
 
+func (c *CachedArticleRepository) ListPub(ctx context.Context, start time.Time, offset, limit int) ([]domain.Article, error) {
+	arts, err := c.dao.ListPub(ctx, start, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+	return slice.Map[dao.PublishedArticle, domain.Article](arts, func(idx int, src dao.PublishedArticle) domain.Article {
+		return c.toDomain(dao.Article(src))
+	}), nil
+}
+
 func (c *CachedArticleRepository) GetPubById(ctx context.Context, id int64) (domain.Article, error) {
 	res, err := c.cache.GetPub(ctx, id)
 	if err == nil {
@@ -47,7 +59,7 @@ func (c *CachedArticleRepository) GetPubById(ctx context.Context, id int64) (dom
 	if err != nil {
 		return domain.Article{}, err
 	}
-	
+
 	// 现在要去查询对应的 User 信息，拿到创作者信息
 	res = c.toDomain(dao.Article(art))
 	author, err := c.userRepo.FindUserInfoById(ctx, res.Author.Id)

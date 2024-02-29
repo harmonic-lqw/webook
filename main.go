@@ -37,6 +37,11 @@ func main() {
 			panic(err)
 		}
 	}
+	app.cron.Start()
+	defer func() {
+		ctx := app.cron.Stop()
+		<-ctx.Done()
+	}()
 	server := app.server
 
 	//server.GET("/hello", func(ctx *gin.Context) {
@@ -44,6 +49,7 @@ func main() {
 	//	//})
 
 	server.Run(":8080")
+
 }
 
 func initPrometheus() {
