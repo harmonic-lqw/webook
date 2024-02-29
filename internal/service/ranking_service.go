@@ -14,6 +14,8 @@ type RankingService interface {
 	// TopN 前100
 	TopN(ctx context.Context) error
 	GetTopN(ctx context.Context) ([]domain.Article, error)
+	SetLoad(ctx context.Context, nodeId int64, load int) error
+	GetMinLoadNode(ctx context.Context) (int64, int, error)
 }
 
 type BatchRankingService struct {
@@ -42,6 +44,14 @@ func NewBatchRankingService(intrSvc InteractiveService, artSvc ArticleService, r
 		},
 		repo: repo,
 	}
+}
+
+func (b *BatchRankingService) GetMinLoadNode(ctx context.Context) (int64, int, error) {
+	return b.repo.GetMinLoadNode(ctx)
+}
+
+func (b *BatchRankingService) SetLoad(ctx context.Context, nodeId int64, load int) error {
+	return b.repo.SetLoad(ctx, nodeId, load)
 }
 
 func (b *BatchRankingService) GetTopN(ctx context.Context) ([]domain.Article, error) {

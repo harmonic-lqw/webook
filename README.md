@@ -61,3 +61,17 @@ a book not for read
 + ![image-20240225220554969](README.assets/image-20240225220554969.png)
 + ![image-20240225220841729](README.assets/image-20240225220841729.png)
 
+## week11
+
+### 当没有持有锁时的UML
+
++ ![image-20240229220857444](README.assets/image-20240229220857444.png)
+
++ 每次计算 topN 前都判断当前负载是否过高(>90)，过高就释放锁并退出
+
+### 关键URL
+
++ `ranking_job`:
++ `ranking_service`:
++ `ranking_repository`:
++ `ranking_cache`:

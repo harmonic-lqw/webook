@@ -84,6 +84,5 @@ func (s *Scheduler) Schedule(ctx context.Context) {
 					logger.Error(er))
 			}
 		}()
-
 	}
 }

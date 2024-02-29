@@ -12,7 +12,9 @@ import (
 
 func InitRankingJob(svc service.RankingService, l logger.LoggerV1, client *rlock.Client) *job.RankingJob {
 	// 这里的时间是指，计算一次 topN 最多花多长时间
-	return job.NewRankingJob(svc, time.Second*30, l, client)
+	rankingJob := job.NewRankingJob(svc, time.Second*30, l, client, 1, 0)
+	rankingJob.RefreshLoad()
+	return rankingJob
 }
 
 func InitJobs(l logger.LoggerV1, rJob *job.RankingJob) *cron.Cron {
@@ -31,7 +33,7 @@ func InitJobs(l logger.LoggerV1, rJob *job.RankingJob) *cron.Cron {
 	})
 	expr := cron.New(cron.WithSeconds())
 	// 定时任务 1m 执行一次计算 topN
-	_, err := expr.AddJob("@every 1m", builder.Build(rJob))
+	_, err := expr.AddJob("@every 5s", builder.Build(rJob))
 	if err != nil {
 		panic(err)
 	}

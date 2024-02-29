@@ -9,6 +9,8 @@ import (
 type RankingRepository interface {
 	ReplaceTopN(ctx context.Context, arts []domain.Article) error
 	GetTopN(ctx context.Context) ([]domain.Article, error)
+	SetLoad(ctx context.Context, nodeId int64, load int) error
+	GetMinLoadNode(ctx context.Context) (int64, int, error)
 }
 
 type CachedOnlyRankingRepository struct {
@@ -25,6 +27,14 @@ func NewCachedOnlyRankingRepositoryV1(redisCache *cache.RankingRedisCache, local
 
 func NewCachedOnlyRankingRepository(cache cache.RankingCache) RankingRepository {
 	return &CachedOnlyRankingRepository{cache: cache}
+}
+
+func (r *CachedOnlyRankingRepository) GetMinLoadNode(ctx context.Context) (int64, int, error) {
+	return r.cache.GetMinLoadNode(ctx)
+}
+
+func (r *CachedOnlyRankingRepository) SetLoad(ctx context.Context, nodeId int64, load int) error {
+	return r.cache.SetLoad(ctx, nodeId, load)
 }
 
 func (r *CachedOnlyRankingRepository) GetTopN(ctx context.Context) ([]domain.Article, error) {

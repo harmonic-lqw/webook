@@ -27,6 +27,9 @@ func (dao *GORMJobDAO) Preempt(ctx context.Context) (Job, error) {
 	for {
 		var j Job
 		now := time.Now()
+		// 任务被调度的两种可能
+		// 没人调度
+		// 曾经有人调度，但是后面续约失效，也就是这个调度的节点可能已经崩溃
 		err := db.Where("(status = ? AND next_time < ?) OR (status = ? AND utime < ?)",
 			jobStatusWaiting, now.UnixMilli(),
 			// utime 的判定需要根据 cronJobService.refreshInterval 续约间隔来决定

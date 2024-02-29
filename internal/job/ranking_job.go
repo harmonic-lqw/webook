@@ -3,6 +3,7 @@ package job
 import (
 	"context"
 	rlock "github.com/gotomicro/redis-lock"
+	"math/rand"
 	"sync"
 	"time"
 	"webook/internal/service"
@@ -20,9 +21,13 @@ type RankingJob struct {
 	localLock *sync.Mutex
 	// 为了扩大锁的范围，将 lock 设置为一个字段，并通过本地锁保护起来
 	lock *rlock.Lock
+
+	// 模拟负载
+	nodeId int64
+	load   int
 }
 
-func NewRankingJob(svc service.RankingService, timeout time.Duration, l logger.LoggerV1, client *rlock.Client) *RankingJob {
+func NewRankingJob(svc service.RankingService, timeout time.Duration, l logger.LoggerV1, client *rlock.Client, nodeId int64, load int) *RankingJob {
 	return &RankingJob{
 		svc:       svc,
 		timeout:   timeout,
@@ -30,6 +35,8 @@ func NewRankingJob(svc service.RankingService, timeout time.Duration, l logger.L
 		l:         l,
 		client:    client,
 		localLock: &sync.Mutex{},
+		nodeId:    nodeId,
+		load:      load,
 	}
 }
 
@@ -41,10 +48,29 @@ func (r *RankingJob) Name() string {
 func (r *RankingJob) Run() error {
 	r.localLock.Lock()
 	qLock := r.lock
-
 	if qLock == nil {
+		// Week11作业：有锁时，如果负载过高就放弃抢锁
+		if r.load >= 90 {
+			return nil
+		}
+
+		// Week11作业：判断该节点是否在所有节点中属于低负载节点
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		defer cancel()
+		_, minLoad, err := r.svc.GetMinLoadNode(ctx)
+		if err != nil {
+			r.l.Error("获取最小负载节点失败",
+				logger.Error(err))
+			return err
+		}
+
+		// Week11作业：当负载较高(>50) 且 当前节点比全局最小节点负载大太多(20)时，同样放弃抢锁
+		if r.load > 50 && (r.load-minLoad) > 20 {
+			return nil
+		}
+
 		// 开始抢锁
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*4)
+		ctx, cancel = context.WithTimeout(context.Background(), time.Second*5)
 		defer cancel()
 		// r.timeout 分布式锁持有时间;最长计算时间
 		lock, err := r.client.Lock(ctx, r.key, r.timeout,
@@ -73,6 +99,22 @@ func (r *RankingJob) Run() error {
 			}
 		}()
 	}
+
+	// Week11作业：有锁时，负载过高释放锁（拿到锁也再次判断一次）
+	if r.load >= 90 {
+		r.localLock.Lock()
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		err := r.lock.Unlock(ctx)
+		if err != nil {
+			r.l.Error("负载过高，但释放分布式锁失败",
+				logger.Error(err))
+			return err
+		}
+		r.localLock.Unlock()
+		// 或许不用返回，多计算一次也没啥大不了
+		return nil
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 	return r.svc.TopN(ctx)
@@ -87,7 +129,28 @@ func (r *RankingJob) Close() error {
 	return lock.Unlock(ctx)
 }
 
-// Run()只用分布式锁来控制计算
+// RefreshLoad 刷新负载
+func (r *RankingJob) RefreshLoad() {
+	r.load = rand.Intn(100)
+	ticker := time.NewTicker(time.Minute)
+	go func() {
+		defer ticker.Stop()
+		for range ticker.C {
+			r.load = rand.Intn(100)
+			// 上传负载
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			err := r.svc.SetLoad(ctx, r.nodeId, r.load)
+			if err != nil {
+				r.l.Warn("上传该节点负载失败",
+					logger.Int64("nodeId", r.nodeId),
+					logger.Int("load", r.load))
+			}
+			cancel()
+		}
+	}()
+}
+
+// Run 只用分布式锁来控制计算
 //func (r *RankingJob) Run() error {
 //	// 加锁超时，比所有重试时间要长一些
 //	ctx, cancel := context.WithTimeout(context.Background(), time.Second*4)
