@@ -71,7 +71,13 @@ a book not for read
 
 ### 关键URL
 
-+ `ranking_job`:
-+ `ranking_service`:
-+ `ranking_repository`:
-+ `ranking_cache`:
++ `ranking_job`:[webook/internal/job/ranking_job.go at main · harmonic-lqw/webook (github.com)](https://github.com/harmonic-lqw/webook/blob/main/internal/job/ranking_job.go)
++ `ranking_service`:[webook/internal/service/ranking_service.go at main · harmonic-lqw/webook (github.com)](https://github.com/harmonic-lqw/webook/blob/main/internal/service/ranking_service.go)
++ `ranking_repository`:[webook/internal/repository/ranking.go at main · harmonic-lqw/webook (github.com)](https://github.com/harmonic-lqw/webook/blob/main/internal/repository/ranking.go)
++ `ranking_cache`:[webook/internal/repository/cache/ranking.go at main · harmonic-lqw/webook (github.com)](https://github.com/harmonic-lqw/webook/blob/main/internal/repository/cache/ranking.go)
+
+### 极端情况
+
++ 当新节点的最新负载还没有存到 redis ，导致该节点一直持有锁，知道该节点负载超过阈值。
++ 如果该节点宕机，该锁只能等到超时才会被释放，如果它的负载很高，通常不会再获得锁，如果其它原因宕机，负载低的话，它的负载很可能会持续影响其它节点获得锁。可能需要手动从 redis 中删除该节点？
+

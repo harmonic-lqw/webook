@@ -66,7 +66,7 @@ func (r *RankingRedisCache) GetMinLoadNode(ctx context.Context) (int64, int, err
 
 func (r *RankingRedisCache) SetLoad(ctx context.Context, nodeId int64, load int) error {
 	nodeKey := r.nodeKey(nodeId)
-	return r.client.Set(ctx, nodeKey, load, time.Minute*2).Err()
+	return r.client.Set(ctx, nodeKey, load, time.Minute).Err()
 }
 
 func (r *RankingRedisCache) Get(ctx context.Context) ([]domain.Article, error) {
