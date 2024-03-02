@@ -1,0 +1,59 @@
+syntax="proto3";
+
+
+// go_package 指定了对应的 Go 包名
+option go_package = "webook/demo/grpc";
+
+// 类型 名称 = 编号;
+// 编号要从 1 开始且可以不连续，但编号一定不能重复，哪怕删除后也不能服用
+message User {
+  int64 id = 1;
+  string name = 2;
+
+  string avatar = 4;
+
+  // map 类型
+  map<string, string> attributes = 5;
+  // 数组类型
+  repeated string nicknames = 6;
+  // 可选字段；因为其它字段不填也会使用默认值，因此可选字段通常只有在默认值有意义的场景下使用
+  optional int32 age = 7;
+  // 引用其它 message
+  Address addr = 8;
+
+  // 只能有一个有值
+  oneof contacts {
+    string email = 9;
+    string phone = 10;
+  }
+
+  // 枚举类型
+  Gender gender = 11;
+}
+
+message Address {
+  string province = 1;
+  string city = 2;
+}
+
+
+enum Gender {
+  // 通常不用 0
+  Unknown = 0;
+  Male = 1;
+  Female = 2;
+}
+
+// 定义 service
+service UserService {
+  rpc GetByID(GetByIDRequest) returns(GetByIDResponse);
+}
+
+message GetByIDRequest {
+  int64 id = 1;
+}
+
+message GetByIDResponse {
+  User user = 1;
+}
+

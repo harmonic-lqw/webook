@@ -37,7 +37,7 @@ func InitWebServer() *App {
 		ioc.InitRlockClient,
 
 		// Dao 和 Cache
-		dao.NewUserDAO, dao.NewArticleGROMDAO,
+		dao.NewUserDAO, dao.NewArticleGORMDAO,
 		cache.NewRedisUserCache, cache.NewRedisCodeCache, cache.NewArticleRedisCache,
 		ioc.InitConsumers,
 		// LocalCodeCache

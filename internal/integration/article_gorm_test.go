@@ -26,7 +26,7 @@ type ArticleHandlerSuite struct {
 func (s *ArticleHandlerSuite) SetupSuite() {
 	s.db = startup.InitDB()
 	server := gin.Default()
-	hdl := startup.InitArticleHandler(dao.NewArticleGROMDAO(s.db))
+	hdl := startup.InitArticleHandler(dao.NewArticleGORMDAO(s.db))
 	server.Use(func(ctx *gin.Context) {
 		ctx.Set("user", ijwt.UserClaims{
 			UserId: 123,

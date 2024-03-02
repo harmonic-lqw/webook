@@ -3,56 +3,55 @@
 package startup
 
 import (
-	article2 "gitee.com/geekbang/basic-go/webook/internal/events/article"
-	"gitee.com/geekbang/basic-go/webook/internal/job"
-	"gitee.com/geekbang/basic-go/webook/internal/repository"
-	"gitee.com/geekbang/basic-go/webook/internal/repository/cache"
-	"gitee.com/geekbang/basic-go/webook/internal/repository/dao"
-	"gitee.com/geekbang/basic-go/webook/internal/repository/dao/article"
-	"gitee.com/geekbang/basic-go/webook/internal/service"
-	"gitee.com/geekbang/basic-go/webook/internal/service/sms"
-	"gitee.com/geekbang/basic-go/webook/internal/service/sms/async"
-	"gitee.com/geekbang/basic-go/webook/internal/web"
-	ijwt "gitee.com/geekbang/basic-go/webook/internal/web/jwt"
-	"gitee.com/geekbang/basic-go/webook/ioc"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
+	"webook/internal/events/article"
+	"webook/internal/job"
+	"webook/internal/repository"
+	"webook/internal/repository/cache"
+	"webook/internal/repository/dao"
+	"webook/internal/service"
+	"webook/internal/service/sms"
+	"webook/internal/service/sms/async"
+	"webook/internal/web"
+	ijwt "webook/internal/web/jwt"
+	"webook/ioc"
 )
 
-var thirdProvider = wire.NewSet(InitRedis, InitTestDB,
-	InitLog,
-	NewSyncProducer,
-	InitKafka,
+var thirdProvider = wire.NewSet(InitRedis, InitDB,
+	InitLogger,
+	InitSyncProducer,
+	InitSaramaClient,
 )
 var userSvcProvider = wire.NewSet(
-	dao.NewGORMUserDAO,
+	dao.NewUserDAO,
 	cache.NewRedisUserCache,
 	repository.NewCachedUserRepository,
 	service.NewUserService)
-var articlSvcProvider = wire.NewSet(
-	article.NewGORMArticleDAO,
-	article2.NewSaramaSyncProducer,
-	cache.NewRedisArticleCache,
-	repository.NewArticleRepository,
+
+var articleSvcProvider = wire.NewSet(
+	dao.NewArticleGORMDAO,
+	article.NewSaramaSyncProducer,
+	cache.NewArticleRedisCache,
+	repository.NewCachedArticleRepository,
 	service.NewArticleService)
 
 var interactiveSvcProvider = wire.NewSet(
 	service.NewInteractiveService,
 	repository.NewCachedInteractiveRepository,
 	dao.NewGORMInteractiveDAO,
-	cache.NewRedisInteractiveCache,
+	cache.NewInteractiveRedisCache,
 )
 
 var rankServiceProvider = wire.NewSet(
 	service.NewBatchRankingService,
-	repository.NewCachedRankingRepository,
-	cache.NewRedisRankingCache,
-	cache.NewRankingLocalCache,
+	repository.NewCachedOnlyRankingRepository,
+	cache.NewRankingRedisCache,
 )
 
 var jobProviderSet = wire.NewSet(
 	service.NewCronJobService,
-	repository.NewPreemptCronJobRepository,
+	repository.NewPreemptJobRepository,
 	dao.NewGORMJobDAO)
 
 //go:generate wire
@@ -60,26 +59,26 @@ func InitWebServer() *gin.Engine {
 	wire.Build(
 		thirdProvider,
 		userSvcProvider,
-		articlSvcProvider,
+		articleSvcProvider,
 		interactiveSvcProvider,
 		cache.NewRedisCodeCache,
 		repository.NewCachedCodeRepository,
 		// service 部分
 		// 集成测试我们显式指定使用内存实现
-		ioc.InitSmsMemoryService,
+		ioc.InitMemorySMSService,
 
 		// 指定啥也不干的 wechat service
-		InitPhantomWechatService,
-		service.NewSMSCodeService,
+		InitWechatService,
+		service.NewCodeService,
 		// handler 部分
 		web.NewUserHandler,
 		web.NewOAuth2WechatHandler,
 		web.NewArticleHandler,
-		web.NewObservabilityHandler,
-		ijwt.NewRedisHandler,
+		//web.NewObservabilityHandler,
+		ijwt.NewRedisJWTHandler,
 
 		// gin 的中间件
-		ioc.GinMiddlewares,
+		ioc.InitGinMiddlewares,
 
 		// Web 服务器
 		ioc.InitWebServer,
@@ -88,14 +87,14 @@ func InitWebServer() *gin.Engine {
 	return gin.Default()
 }
 
-func InitArticleHandler(dao article.ArticleDAO) *web.ArticleHandler {
+func InitArticleHandler(dao dao.ArticleDAO) *web.ArticleHandler {
 	wire.Build(thirdProvider,
 		userSvcProvider,
 		interactiveSvcProvider,
-		article2.NewSaramaSyncProducer,
-		cache.NewRedisArticleCache,
+		article.NewSaramaSyncProducer,
+		cache.NewArticleRedisCache,
 		//wire.InterfaceValue(new(article.ArticleDAO), dao),
-		repository.NewArticleRepository,
+		repository.NewCachedArticleRepository,
 		service.NewArticleService,
 		web.NewArticleHandler)
 	return new(web.ArticleHandler)
@@ -107,7 +106,7 @@ func InitUserSvc() service.UserService {
 }
 
 func InitAsyncSmsService(svc sms.Service) *async.Service {
-	wire.Build(thirdProvider, repository.NewAsyncSMSRepository,
+	wire.Build(thirdProvider, repository.NewAsyncSmsRepository,
 		dao.NewGORMAsyncSmsDAO,
 		async.NewService,
 	)
@@ -117,7 +116,7 @@ func InitAsyncSmsService(svc sms.Service) *async.Service {
 func InitRankingService() service.RankingService {
 	wire.Build(thirdProvider,
 		interactiveSvcProvider,
-		articlSvcProvider,
+		articleSvcProvider,
 		// 用不上这个 user repo，所以随便搞一个
 		wire.InterfaceValue(new(repository.UserRepository),
 			&repository.CachedUserRepository{}),
@@ -127,7 +126,7 @@ func InitRankingService() service.RankingService {
 
 func InitInteractiveService() service.InteractiveService {
 	wire.Build(thirdProvider, interactiveSvcProvider)
-	return service.NewInteractiveService(nil, nil)
+	return service.NewInteractiveService(nil)
 }
 
 func InitJobScheduler() *job.Scheduler {
@@ -136,6 +135,6 @@ func InitJobScheduler() *job.Scheduler {
 }
 
 func InitJwtHdl() ijwt.Handler {
-	wire.Build(thirdProvider, ijwt.NewRedisHandler)
-	return ijwt.NewRedisHandler(nil)
+	wire.Build(thirdProvider, ijwt.NewRedisJWTHandler)
+	return ijwt.NewRedisJWTHandler(nil)
 }

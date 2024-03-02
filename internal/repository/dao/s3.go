@@ -32,7 +32,7 @@ func (a *ArticleS3DAO) Sync(ctx context.Context, art Article) (int64, error) {
 		err error
 	)
 	err = a.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		dao := NewArticleGROMDAO(tx)
+		dao := NewArticleGORMDAO(tx)
 		if id > 0 {
 			err = dao.UpdateById(ctx, art)
 		} else {

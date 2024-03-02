@@ -84,7 +84,7 @@ func (a *ArticleGORMDAO) SyncStatus(ctx context.Context, uid int64, id int64, st
 
 }
 
-func NewArticleGROMDAO(db *gorm.DB) ArticleDAO {
+func NewArticleGORMDAO(db *gorm.DB) ArticleDAO {
 	return &ArticleGORMDAO{
 		db: db,
 	}
@@ -96,7 +96,7 @@ func (a *ArticleGORMDAO) Sync(ctx context.Context, art Article) (int64, error) {
 		err error
 	)
 	err = a.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		dao := NewArticleGROMDAO(tx)
+		dao := NewArticleGORMDAO(tx)
 		if id > 0 {
 			err = dao.UpdateById(ctx, art)
 		} else {
@@ -147,7 +147,7 @@ func (a *ArticleGORMDAO) Sync2(ctx context.Context, art Article) (int64, error) 
 	)
 
 	// 复用已有代码，不然需要创建一个基于事务的 DAO 进行操作
-	dao := NewArticleGROMDAO(tx)
+	dao := NewArticleGORMDAO(tx)
 	if id > 0 {
 		err = dao.UpdateById(ctx, art)
 	} else {

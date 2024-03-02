@@ -18,7 +18,7 @@ import (
 
 // InitSMSServiceV1 使用装饰器进行初始化
 func InitSMSServiceV1(redisClient redis.Cmdable) sms.Service {
-	svc := initMemorySMSService()
+	svc := initTencentSMSService()
 	svc = ratelimit.NewRateLimitSMSService(svc, limiter.NewRedisSlidingWindowLimiter(redisClient, time.Second, 1000))
 	svc = failover.NewFailOverSMSService([]sms.Service{svc})
 	svc = auth.NewSMSService(svc, []byte("this is the JWT TOKEN given by the SMS platform"))
@@ -50,6 +50,6 @@ func initTencentSMSService() sms.Service {
 	return tencent.NewService(c, "1400877785", "泛古玉的个人公众号")
 }
 
-func initMemorySMSService() sms.Service {
+func InitMemorySMSService() sms.Service {
 	return localsms.NewService()
 }

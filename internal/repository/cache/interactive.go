@@ -32,6 +32,12 @@ type InteractiveRedisCache struct {
 	client redis.Cmdable
 }
 
+func NewInteractiveRedisCache(client redis.Cmdable) InteractiveCache {
+	return &InteractiveRedisCache{
+		client: client,
+	}
+}
+
 func (i *InteractiveRedisCache) Get(ctx context.Context, biz string, bizId int64) (domain.Interactive, error) {
 	key := i.key(biz, bizId)
 	res, err := i.client.HGetAll(ctx, key).Result()
@@ -43,6 +49,7 @@ func (i *InteractiveRedisCache) Get(ctx context.Context, biz string, bizId int64
 	}
 
 	var intr domain.Interactive
+	intr.BizId = bizId
 	// 成功拿到 点赞/收藏/阅读 数
 	intr.LikeCnt, _ = strconv.ParseInt(res[fieldLikeCnt], 10, 64)
 	intr.CollectCnt, _ = strconv.ParseInt(res[fieldCollectCnt], 10, 64)
@@ -75,12 +82,6 @@ func (i *InteractiveRedisCache) IncrLikeCntIfPresent(ctx context.Context, biz st
 func (i *InteractiveRedisCache) DecrLikeCntIfPresent(ctx context.Context, biz string, bizId int64) error {
 	key := i.key(biz, bizId)
 	return i.client.Eval(ctx, luaIncrCnt, []string{key}, fieldLikeCnt, -1).Err()
-}
-
-func NewInteractiveRedisCache(client redis.Cmdable) InteractiveCache {
-	return &InteractiveRedisCache{
-		client: client,
-	}
 }
 
 func (i *InteractiveRedisCache) IncrReadCntIfPresent(ctx context.Context, biz string, bizId int64) error {

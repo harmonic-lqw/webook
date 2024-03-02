@@ -41,7 +41,7 @@ func InitWebServer() *App {
 	userHandler := web.NewUserHandler(userService, handler, codeService)
 	wechatService := ioc.InitWechatService(loggerV1)
 	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService, handler, userService)
-	articleDAO := dao.NewArticleGROMDAO(db)
+	articleDAO := dao.NewArticleGORMDAO(db)
 	articleCache := cache.NewArticleRedisCache(cmdable)
 	articleRepository := repository.NewCachedArticleRepository(articleDAO, articleCache, userRepository)
 	client := ioc.InitSaramaClient()
