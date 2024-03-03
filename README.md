@@ -81,7 +81,31 @@ a book not for read
 + 当新节点的最新负载还没有存到 redis ，导致该节点一直持有锁，知道该节点负载超过阈值。
 + 如果该节点宕机，该锁只能等到超时才会被释放，如果它的负载很高，通常不会再获得锁，如果其它原因宕机，负载低的话，它的负载很可能会持续影响其它节点获得锁。可能需要手动从 redis 中删除该节点？
 
-## week12
+## week12：对应提交记录（assignment week12）
+
+### 关键URL
+
+#### proto相关文件
+
++ [webook/api/proto/gen/intr/v2 at main · harmonic-lqw/webook (github.com)](https://github.com/harmonic-lqw/webook/tree/main/api/proto/gen/intr/v2)
++ [webook/api/proto/intr/v2 at main · harmonic-lqw/webook (github.com)](https://github.com/harmonic-lqw/webook/tree/main/api/proto/intr/v2)
+
+#### server实现：interactive_repo.go
+
++ [webook/interactive/grpc/interactive_repo.go at main · harmonic-lqw/webook (github.com)](https://github.com/harmonic-lqw/webook/blob/main/interactive/grpc/interactive_repo.go)
+
+#### client实现，采用课堂同样的流量控制方法：local_intr_repo.go; intr_repo.go
+
++ [webook/internal/client at main · harmonic-lqw/webook (github.com)](https://github.com/harmonic-lqw/webook/tree/main/internal/client)
+
+#### 聚合位置：ArticleRepository 
+
++ [webook/internal/repository/article.go at main · harmonic-lqw/webook (github.com)](https://github.com/harmonic-lqw/webook/blob/main/internal/repository/article.go)
+
+#### 在 article 对应的 handler 和 service 添加对应方法，并一路透传参数和返回值
+
++ ![image-20240303222413012](README.assets/image-20240303222413012.png)
++ ![image-20240303222424176](README.assets/image-20240303222424176.png)
 
 ### 效果
 
