@@ -1,0 +1,112 @@
+syntax="proto3";
+
+package intr.v2;
+option go_package = "intr/v2;intrv2";
+
+service InteractiveRepository {
+  rpc  IncrReadCnt(IncrReadCntRequest) returns(IncrReadCntResponse);
+  rpc  BatchIncrReadCnt(BatchIncrReadCntRequest) returns(BatchIncrReadCntResponse);
+  rpc  IncrLike(IncrLikeRequest) returns(IncrLikeResponse);
+  rpc  DecrLike(DecrLikeRequest) returns(DecrLikeResponse);
+  rpc  AddCollectionItem(AddCollectionItemRequest) returns(AddCollectionItemResponse);
+  rpc  Get(GetRequest) returns(GetResponse);
+  rpc Liked(LikedRequest) returns(LikedResponse);
+  rpc  Collected(CollectedRequest) returns(CollectedResponse);
+  rpc  GetByIds(GetByIdsRequest) returns(GetByIdsResponse);
+}
+
+message GetByIdsResponse {
+  repeated Interactive intrs = 1;
+}
+
+message GetByIdsRequest {
+  string biz = 1;
+  repeated int64 biz_ids = 2;
+}
+
+message CollectedResponse {
+  bool collected = 1;
+}
+
+message CollectedRequest {
+  string biz = 1;
+  int64 biz_id = 2;
+  int64 uid = 3;
+}
+
+message LikedResponse {
+  bool liked = 1;
+}
+
+message LikedRequest {
+  string biz = 1;
+  int64 biz_id = 2;
+  int64 uid = 3;
+}
+
+message GetResponse {
+  Interactive intr = 1;
+}
+
+message GetRequest {
+  string biz = 1;
+  int64 biz_id = 2;
+}
+
+message Interactive {
+  string  biz = 1;
+  int64 biz_id = 2;
+  int64 read_cnt = 3;
+  int64 like_cnt = 4;
+  int64 collect_cnt = 5;
+  bool liked = 6;
+  bool collected = 7;
+}
+
+message AddCollectionItemResponse {
+}
+
+message AddCollectionItemRequest {
+  string biz = 1;
+  int64 biz_id = 2;
+  int64 cid = 3;
+  int64 uid = 4;
+}
+
+message DecrLikeResponse {
+}
+
+message DecrLikeRequest {
+  string biz = 1;
+  int64 biz_id = 2;
+  int64 uid = 3;
+}
+
+message IncrLikeResponse {
+
+}
+
+message IncrLikeRequest {
+  string biz = 1;
+  int64 biz_id = 2;
+  int64 uid = 3;
+}
+
+message BatchIncrReadCntResponse {
+}
+
+message BatchIncrReadCntRequest {
+  repeated string bizs = 1;
+  repeated int64 biz_ids = 2;
+}
+
+message IncrReadCntRequest {
+  string biz = 1;
+  int64 biz_id = 2;
+}
+
+message IncrReadCntResponse {
+  string biz = 1;
+  int64 biz_id = 2;
+}
+

@@ -11,10 +11,9 @@ package svcmocks
 
 import (
 	context "context"
-	reflect "reflect"
-	domain "webook/internal/domain"
-
 	gomock "go.uber.org/mock/gomock"
+	reflect "reflect"
+	"webook/interactive/domain"
 )
 
 // MockInteractiveService is a mock of InteractiveService interface.

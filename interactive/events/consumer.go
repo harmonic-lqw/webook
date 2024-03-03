@@ -1,14 +1,16 @@
-package article
+package events
 
 import (
 	"context"
 	"github.com/IBM/sarama"
 	"github.com/prometheus/client_golang/prometheus"
 	"time"
-	"webook/internal/repository"
+	"webook/interactive/repository"
 	"webook/pkg/logger"
 	"webook/pkg/saramax"
 )
+
+const TopicReadEvent = "article_read"
 
 type InteractiveReadEventConsumer struct {
 	repo   repository.InteractiveRepository
@@ -65,4 +67,9 @@ func (i *InteractiveReadEventConsumer) Consume(msg *sarama.ConsumerMessage, even
 		i.vector.WithLabelValues(msg.Topic).Observe(float64(duration))
 	}()
 	return i.repo.IncrReadCnt(ctx, "article", event.Aid)
+}
+
+type ReadEvent struct {
+	Aid int64
+	Uid int64
 }

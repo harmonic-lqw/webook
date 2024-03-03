@@ -19,7 +19,7 @@ import (
 )
 
 func main() {
-	initViper()
+	initViperWatch()
 	initPrometheus()
 
 	tpCancel := ioc.InitOTEL()
@@ -153,7 +153,7 @@ func initViperV3() {
 // initViperWatch 通过 WatchConfig 监听配置变更
 func initViperWatch() {
 	cfgfile := pflag.String("config",
-		"config/config.yaml", "配置文件路径")
+		"config/dev.yaml", "配置文件路径")
 
 	viper.SetConfigFile(*cfgfile)
 	viper.SetConfigType("yaml")

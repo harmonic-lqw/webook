@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"time"
+	intrv2 "webook/api/proto/gen/intr/v2"
 	"webook/internal/domain"
 	"webook/internal/events/article"
 	"webook/internal/repository"
@@ -19,6 +20,12 @@ type ArticleService interface {
 	GetById(ctx context.Context, id int64) (domain.Article, error)
 	GetPubById(ctx context.Context, id int64, uid int64) (domain.Article, error)
 	ListPub(ctx context.Context, start time.Time, offset, limit int) ([]domain.Article, error)
+
+	// assignment 11
+	GetIntr(ctx context.Context, biz string, id int64, uid int64) (*intrv2.Interactive, error)
+	LikeIntr(ctx context.Context, biz string, id int64, uid int64) error
+	CancelLikeIntr(ctx context.Context, biz string, id int64, uid int64) error
+	CollectIntr(ctx context.Context, biz string, id int64, cid int64, uid int64) error
 }
 
 type articleService struct {
@@ -30,6 +37,22 @@ type articleService struct {
 	authorRepo repository.ArticleAuthorRepository
 
 	l logger.LoggerV1
+}
+
+func (a *articleService) LikeIntr(ctx context.Context, biz string, id int64, uid int64) error {
+	return a.repo.LikeIntr(ctx, biz, id, uid)
+}
+
+func (a *articleService) CancelLikeIntr(ctx context.Context, biz string, id int64, uid int64) error {
+	return a.repo.CancelLikeIntr(ctx, biz, id, uid)
+}
+
+func (a *articleService) CollectIntr(ctx context.Context, biz string, id int64, cid int64, uid int64) error {
+	return a.repo.CollectIntr(ctx, biz, id, cid, uid)
+}
+
+func (a *articleService) GetIntr(ctx context.Context, biz string, id int64, uid int64) (*intrv2.Interactive, error) {
+	return a.repo.GetIntr(ctx, biz, id, uid)
 }
 
 func (a *articleService) ListPub(ctx context.Context, start time.Time, offset, limit int) ([]domain.Article, error) {

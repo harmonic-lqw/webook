@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	intrv2 "webook/api/proto/gen/intr/v2"
 	"webook/internal/domain"
 	"webook/internal/service"
 	"webook/internal/web/jwt"
@@ -14,18 +15,19 @@ import (
 )
 
 type ArticleHandler struct {
-	svc      service.ArticleService
-	interSvc service.InteractiveService
-	l        logger.LoggerV1
-	biz      string
+	svc service.ArticleService
+	//interSvc intrv1.InteractiveServiceClient
+	l   logger.LoggerV1
+	biz string
 }
 
-func NewArticleHandler(l logger.LoggerV1, svc service.ArticleService, interSvc service.InteractiveService) *ArticleHandler {
+// func NewArticleHandler(l logger.LoggerV1, svc service.ArticleService, interSvc intrv1.InteractiveServiceClient) *ArticleHandler {
+func NewArticleHandler(l logger.LoggerV1, svc service.ArticleService) *ArticleHandler {
 	return &ArticleHandler{
-		l:        l,
-		svc:      svc,
-		interSvc: interSvc,
-		biz:      "article",
+		l:   l,
+		svc: svc,
+		//interSvc: interSvc,
+		biz: "article",
 	}
 }
 
@@ -270,21 +272,30 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 	//}()
 
 	var (
-		eg   errgroup.Group
-		art  domain.Article
-		intr domain.Interactive
+		eg  errgroup.Group
+		art domain.Article
+		//intrResp *intrv1.GetResponse
+
+		// assignment 11
+		intrResp2 *intrv2.Interactive
 	)
 
 	uc := ctx.MustGet("user").(jwt.UserClaims)
+	// 获取文章，这里就会触发 kafka 发送消息
 	eg.Go(func() error {
 		var er error
 		art, er = h.svc.GetPubById(ctx, id, uc.UserId)
 		return er
 	})
 
+	// 获取阅读数/点赞/收藏 （已微服务化）
 	eg.Go(func() error {
 		var er error
-		intr, er = h.interSvc.Get(ctx, h.biz, id, uc.UserId)
+		//intrResp, er = h.interSvc.Get(ctx, &intrv1.GetRequest{
+		//	Biz: h.biz, BizId: id, Uid: uc.UserId,
+		//})
+		// assignment 11
+		intrResp2, er = h.svc.GetIntr(ctx, h.biz, id, uc.UserId)
 		return er
 	})
 
@@ -303,6 +314,26 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 		return
 	}
 
+	//intr := intrResp.Intr
+	//vo := ArticleVo{
+	//	Id:    art.Id,
+	//	Title: art.Title,
+	//	//Abstract: art.Abstract(),
+	//	Content: art.Content,
+	//	//AuthorId: art.Author.Id,
+	//	AuthorName: art.Author.Name,
+	//	ReadCnt:    intr.ReadCnt,
+	//	LikeCnt:    intr.LikeCnt,
+	//	CollectCnt: intr.CollectCnt,
+	//	Liked:      intr.Liked,
+	//	Collected:  intr.Collected,
+	//
+	//	Status: art.Status.ToUint8(),
+	//	Ctime:  art.Ctime.Format(time.DateTime),
+	//	Utime:  art.Utime.Format(time.DateTime),
+	//}
+
+	// assignment 11
 	vo := ArticleVo{
 		Id:    art.Id,
 		Title: art.Title,
@@ -310,11 +341,11 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 		Content: art.Content,
 		//AuthorId: art.Author.Id,
 		AuthorName: art.Author.Name,
-		ReadCnt:    intr.ReadCnt,
-		LikeCnt:    intr.LikeCnt,
-		CollectCnt: intr.CollectCnt,
-		Liked:      intr.Liked,
-		Collected:  intr.Collected,
+		ReadCnt:    intrResp2.ReadCnt,
+		LikeCnt:    intrResp2.LikeCnt,
+		CollectCnt: intrResp2.CollectCnt,
+		Liked:      intrResp2.Liked,
+		Collected:  intrResp2.Collected,
 
 		Status: art.Status.ToUint8(),
 		Ctime:  art.Ctime.Format(time.DateTime),
@@ -337,9 +368,16 @@ func (h *ArticleHandler) Like(ctx *gin.Context) {
 	uc := ctx.MustGet("user").(jwt.UserClaims)
 	var err error
 	if req.Like {
-		err = h.interSvc.Like(ctx, h.biz, req.Id, uc.UserId)
+		//_, err = h.interSvc.Like(ctx, &intrv1.LikeRequest{
+		//	Biz: h.biz, BizId: req.Id, Uid: uc.UserId,
+		//})
+
+		err = h.svc.LikeIntr(ctx, h.biz, req.Id, uc.UserId)
 	} else {
-		err = h.interSvc.CancelLike(ctx, h.biz, req.Id, uc.UserId)
+		//_, err = h.interSvc.CancelLike(ctx, &intrv1.CancelLikeRequest{
+		//	Biz: h.biz, BizId: req.Id, Uid: uc.UserId,
+		//})
+		err = h.svc.CancelLikeIntr(ctx, h.biz, req.Id, uc.UserId)
 	}
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{
@@ -368,7 +406,10 @@ func (h *ArticleHandler) Collect(ctx *gin.Context) {
 		return
 	}
 	uc := ctx.MustGet("user").(jwt.UserClaims)
-	err := h.interSvc.Collect(ctx, h.biz, req.Id, req.Cid, uc.UserId)
+	//_, err := h.interSvc.Collect(ctx, &intrv1.CollectRequest{
+	//	Biz: h.biz, BizId: req.Id, Cid: req.Cid, Uid: uc.UserId,
+	//})
+	err := h.svc.CollectIntr(ctx, h.biz, req.Id, req.Cid, uc.UserId)
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{
 			Code: 5,

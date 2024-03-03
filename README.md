@@ -81,3 +81,20 @@ a book not for read
 + 当新节点的最新负载还没有存到 redis ，导致该节点一直持有锁，知道该节点负载超过阈值。
 + 如果该节点宕机，该锁只能等到超时才会被释放，如果它的负载很高，通常不会再获得锁，如果其它原因宕机，负载低的话，它的负载很可能会持续影响其它节点获得锁。可能需要手动从 redis 中删除该节点？
 
+## week12
+
+### 效果
+
++ 可以看到成功触发 grpc repo
+
++ ![1](README.assets/1.png)
+
++ ![2](README.assets/2.png)
+
++ ![3](README.assets/3.png)
+
++ ![4](README.assets/4.png)
+
++ ![5](README.assets/5.png)
+
+  

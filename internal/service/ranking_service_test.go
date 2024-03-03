@@ -6,6 +6,8 @@ import (
 	"go.uber.org/mock/gomock"
 	"testing"
 	"time"
+	domain2 "webook/interactive/domain"
+	"webook/interactive/service"
 	"webook/internal/domain"
 	svcmocks "webook/internal/service/mocks"
 )
@@ -16,14 +18,14 @@ func TestBatchRankingService_TopN(t *testing.T) {
 	testCases := []struct {
 		name string
 
-		mock func(ctrl *gomock.Controller) (InteractiveService, ArticleService)
+		mock func(ctrl *gomock.Controller) (service.InteractiveService, ArticleService)
 
 		wantArts []domain.Article
 		wantErr  error
 	}{
 		{
 			name: "成功获取",
-			mock: func(ctrl *gomock.Controller) (InteractiveService, ArticleService) {
+			mock: func(ctrl *gomock.Controller) (service.InteractiveService, ArticleService) {
 				intrSvc := svcmocks.NewMockInteractiveService(ctrl)
 				artSvc := svcmocks.NewMockArticleService(ctrl)
 				// 模拟数据库的分批查询
@@ -43,13 +45,13 @@ func TestBatchRankingService_TopN(t *testing.T) {
 
 				// 第一批点赞数据
 				intrSvc.EXPECT().GetByIds(gomock.Any(), "article", []int64{1, 2}).
-					Return(map[int64]domain.Interactive{
+					Return(map[int64]domain2.Interactive{
 						1: {LikeCnt: 12},
 						2: {LikeCnt: 23},
 					}, nil)
 				// 第二批点赞数据
 				intrSvc.EXPECT().GetByIds(gomock.Any(), "article", []int64{3, 4}).
-					Return(map[int64]domain.Interactive{
+					Return(map[int64]domain2.Interactive{
 						3: {LikeCnt: 34},
 						4: {LikeCnt: 45},
 					}, nil)

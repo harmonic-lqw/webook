@@ -5,6 +5,10 @@ package startup
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
+	repository2 "webook/interactive/repository"
+	cache2 "webook/interactive/repository/cache"
+	dao2 "webook/interactive/repository/dao"
+	service2 "webook/interactive/service"
 	"webook/internal/events/article"
 	"webook/internal/job"
 	"webook/internal/repository"
@@ -36,17 +40,17 @@ var articleSvcProvider = wire.NewSet(
 	repository.NewCachedArticleRepository,
 	service.NewArticleService)
 
-var interactiveSvcProvider = wire.NewSet(
-	service.NewInteractiveService,
-	repository.NewCachedInteractiveRepository,
-	dao.NewGORMInteractiveDAO,
-	cache.NewInteractiveRedisCache,
-)
-
 var rankServiceProvider = wire.NewSet(
 	service.NewBatchRankingService,
 	repository.NewCachedOnlyRankingRepository,
 	cache.NewRankingRedisCache,
+)
+
+var interactiveSvcProvider = wire.NewSet(
+	service2.NewInteractiveService,
+	repository2.NewCachedInteractiveRepository,
+	dao2.NewGORMInteractiveDAO,
+	cache2.NewInteractiveRedisCache,
 )
 
 var jobProviderSet = wire.NewSet(
@@ -124,9 +128,9 @@ func InitRankingService() service.RankingService {
 	return &service.BatchRankingService{}
 }
 
-func InitInteractiveService() service.InteractiveService {
+func InitInteractiveService() service2.InteractiveService {
 	wire.Build(thirdProvider, interactiveSvcProvider)
-	return service.NewInteractiveService(nil)
+	return service2.NewInteractiveService(nil)
 }
 
 func InitJobScheduler() *job.Scheduler {

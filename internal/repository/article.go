@@ -5,6 +5,7 @@ import (
 	"github.com/ecodeclub/ekit/slice"
 	"gorm.io/gorm"
 	"time"
+	intrv2 "webook/api/proto/gen/intr/v2"
 	"webook/internal/domain"
 	"webook/internal/repository/cache"
 	"webook/internal/repository/dao"
@@ -19,6 +20,12 @@ type ArticleRepository interface {
 	GetById(ctx context.Context, id int64) (domain.Article, error)
 	GetPubById(ctx context.Context, id int64) (domain.Article, error)
 	ListPub(ctx context.Context, start time.Time, offset, limit int) ([]domain.Article, error)
+
+	// assignment 11
+	GetIntr(ctx context.Context, biz string, id int64, uid int64) (*intrv2.Interactive, error)
+	LikeIntr(ctx context.Context, biz string, id int64, uid int64) error
+	CancelLikeIntr(ctx context.Context, biz string, id int64, uid int64) error
+	CollectIntr(ctx context.Context, biz string, id int64, cid int64, uid int64) error
 }
 
 type CachedArticleRepository struct {
@@ -38,6 +45,74 @@ type CachedArticleRepository struct {
 	// 没有面向接口原则，直接引入 gorm.DB 的依赖
 	// 跨层依赖
 	db *gorm.DB
+
+	// 在 Repository 聚合微服务 Interactive
+	intrRepo intrv2.InteractiveRepositoryClient
+}
+
+func (c *CachedArticleRepository) LikeIntr(ctx context.Context, biz string, id int64, uid int64) error {
+	_, err := c.intrRepo.IncrLike(ctx, &intrv2.IncrLikeRequest{
+		Biz:   biz,
+		BizId: id,
+		Uid:   uid,
+	})
+	return err
+}
+
+func (c *CachedArticleRepository) CancelLikeIntr(ctx context.Context, biz string, id int64, uid int64) error {
+	_, err := c.intrRepo.DecrLike(ctx, &intrv2.DecrLikeRequest{
+		Biz:   biz,
+		BizId: id,
+		Uid:   uid,
+	})
+	return err
+}
+
+func (c *CachedArticleRepository) CollectIntr(ctx context.Context, biz string, id int64, cid int64, uid int64) error {
+	_, err := c.intrRepo.AddCollectionItem(ctx, &intrv2.AddCollectionItemRequest{
+		Biz:   biz,
+		BizId: id,
+		Cid:   cid,
+		Uid:   uid,
+	})
+	return err
+}
+
+func (c *CachedArticleRepository) GetIntr(ctx context.Context, biz string, id int64, uid int64) (*intrv2.Interactive, error) {
+	var intr *intrv2.Interactive
+	// 拿阅读数
+	respIntr, err := c.intrRepo.Get(ctx, &intrv2.GetRequest{
+		Biz:   biz,
+		BizId: id,
+	})
+	if err != nil {
+		return nil, err
+	}
+	intr = respIntr.Intr
+
+	// 拿是否点赞
+	respLiked, err := c.intrRepo.Liked(ctx, &intrv2.LikedRequest{
+		Biz:   biz,
+		BizId: id,
+		Uid:   uid,
+	})
+	if err != nil {
+		return nil, err
+	}
+	intr.Liked = respLiked.Liked
+
+	// 拿是否收藏
+	respCollected, err := c.intrRepo.Collected(ctx, &intrv2.CollectedRequest{
+		Biz:   biz,
+		BizId: id,
+		Uid:   uid,
+	})
+	if err != nil {
+		return nil, err
+	}
+	intr.Collected = respCollected.Collected
+
+	return intr, nil
 }
 
 func (c *CachedArticleRepository) ListPub(ctx context.Context, start time.Time, offset, limit int) ([]domain.Article, error) {
@@ -243,11 +318,12 @@ func (c *CachedArticleRepository) SyncV1(ctx context.Context, art domain.Article
 
 }
 
-func NewCachedArticleRepository(dao dao.ArticleDAO, cache cache.ArticleCache, userRepo UserRepository) ArticleRepository {
+func NewCachedArticleRepository(dao dao.ArticleDAO, cache cache.ArticleCache, userRepo UserRepository, intrRepo intrv2.InteractiveRepositoryClient) ArticleRepository {
 	return &CachedArticleRepository{
 		dao:      dao,
 		cache:    cache,
 		userRepo: userRepo,
+		intrRepo: intrRepo,
 	}
 }
 

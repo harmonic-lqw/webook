@@ -4,10 +4,16 @@
 .PHONY: generate
 generate:
 	@make mock
+
 .PHONY: mock
 mock:
 	@go generate -tags=wireinject ./...
 	@go mod tidy
+
+.PHONY: grpc
+grpc:
+	# 这句命令要跑到 webook 上一层目录中，编译 buf.gen.yaml
+	@buf generate webook/api/proto
 
 .PHONY: e2e
 e2e:
@@ -15,9 +21,11 @@ e2e:
 	@docker compose -f webook/docker-compose.yaml up -d
 	@go test -race ./webook/... -tags=e2e
 	@docker compose -f webook/docker-compose.yaml down
+
 .PHONY: e2e_up
 e2e_up:
 	@docker compose -f webook/docker-compose.yaml up -d
+
 .PHONY: e2e_down
 e2e_down:
 	@docker compose -f webook/docker-compose.yaml down
