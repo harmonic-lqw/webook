@@ -60,7 +60,8 @@ func InitWebServer() *App {
 
 		// Intr Client
 		ioc.InitIntrClient,
-		ioc.InitIntrRepositoryClient,
+		// assignment 11
+		//ioc.InitIntrRepositoryClient,
 
 		// ranking
 		rankingSvcSet,

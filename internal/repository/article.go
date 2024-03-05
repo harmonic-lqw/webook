@@ -318,12 +318,13 @@ func (c *CachedArticleRepository) SyncV1(ctx context.Context, art domain.Article
 
 }
 
-func NewCachedArticleRepository(dao dao.ArticleDAO, cache cache.ArticleCache, userRepo UserRepository, intrRepo intrv2.InteractiveRepositoryClient) ArticleRepository {
+func NewCachedArticleRepository(dao dao.ArticleDAO, cache cache.ArticleCache, userRepo UserRepository) ArticleRepository {
 	return &CachedArticleRepository{
 		dao:      dao,
 		cache:    cache,
 		userRepo: userRepo,
-		intrRepo: intrRepo,
+		// assignment 11
+		//intrRepo: intrRepo,
 	}
 }
 

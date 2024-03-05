@@ -4,6 +4,8 @@ import (
 	"github.com/IBM/sarama"
 	"github.com/spf13/viper"
 	"webook/interactive/events"
+	"webook/interactive/repository/dao"
+	"webook/pkg/migrator/events/fixer"
 )
 
 func InitSaramaClient() sarama.Client {
@@ -24,6 +26,14 @@ func InitSaramaClient() sarama.Client {
 	return client
 }
 
-func InitConsumers(c1 *events.InteractiveReadEventConsumer) []events.Consumer {
-	return []events.Consumer{c1}
+func InitSyncProducer(c sarama.Client) sarama.SyncProducer {
+	p, err := sarama.NewSyncProducerFromClient(c)
+	if err != nil {
+		panic(err)
+	}
+	return p
+}
+
+func InitConsumers(c1 *events.InteractiveReadEventConsumer, c2 *fixer.FixConsumer[dao.Interactive]) []events.Consumer {
+	return []events.Consumer{c1, c2}
 }

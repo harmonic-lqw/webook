@@ -5,6 +5,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"time"
+	"webook/pkg/migrator"
 )
 
 type InteractiveDAO interface {
@@ -193,9 +194,9 @@ func (g *GORMInteractiveDAO) IncrReadCnt(ctx context.Context, biz string, bizId 
 type UserLikeBiz struct {
 	Id int64 `gorm:"primaryKey, autoIncrement"`
 
-	Uid   int64  `gorm:"uniqueIndex:uid_biz_type_id"`
-	BizId int64  `gorm:"uniqueIndex:uid_biz_type_id"`
-	Biz   string `gorm:"type=varchar(128), uniqueIndex:uid_biz_type_id"`
+	Uid   int64  `gorm:"uniqueIndex:uid_biz_type_id:255"`
+	BizId int64  `gorm:"uniqueIndex:uid_biz_type_id:255"`
+	Biz   string `gorm:"type=varchar(1024), uniqueIndex:uid_biz_type_id:255"`
 	// 标记软删除
 	Status uint8
 	Utime  int64
@@ -206,9 +207,9 @@ type UserLikeBiz struct {
 type UserCollectionBiz struct {
 	Id int64 `gorm:"primaryKey, autoIncrement"`
 
-	Uid   int64  `gorm:"uniqueIndex:uid_biz_type_id"`
-	BizId int64  `gorm:"uniqueIndex:uid_biz_type_id"`
-	Biz   string `gorm:"type=varchar(128), uniqueIndex:uid_biz_type_id"`
+	Uid   int64  `gorm:"uniqueIndex:uid_biz_type_id:255"`
+	BizId int64  `gorm:"uniqueIndex:uid_biz_type_id:255"`
+	Biz   string `gorm:"type=varchar(1024), uniqueIndex:uid_biz_type_id:255"`
 	// 收藏夹 ID
 	Cid   int64 `gorm:"index"`
 	Utime int64
@@ -219,12 +220,24 @@ type Interactive struct {
 	Id int64 `gorm:"primaryKey, autoIncrement"`
 
 	// 创建联合索引 <bizid, biz>
-	BizId int64  `gorm:"uniqueIndex:biz_type_id"`
-	Biz   string `gorm:"type=varchar(128), uniqueIndex:biz_type_id"`
+	BizId int64  `gorm:"uniqueIndex:biz_type_id:255"`
+	Biz   string `gorm:"type=varchar(1024), uniqueIndex:biz_type_id:255"`
 
 	ReadCnt    int64
 	LikeCnt    int64
 	CollectCnt int64
 	Utime      int64
 	Ctime      int64
+}
+
+func (i Interactive) ID() int64 {
+	return i.Id
+}
+
+func (i Interactive) CompareTo(dst migrator.Entity) bool {
+	val, ok := dst.(Interactive)
+	if !ok {
+		return false
+	}
+	return i == val
 }

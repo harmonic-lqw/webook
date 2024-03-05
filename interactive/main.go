@@ -17,6 +17,15 @@ func main() {
 		}
 	}
 
+	// 开 数据迁移 服务
+	go func() {
+		er := app.ginxServer.Start()
+		if er != nil {
+			panic(er)
+		}
+	}()
+
+	// 开 grpc 服务
 	err := app.server.Serve()
 	if err != nil {
 		panic(err)

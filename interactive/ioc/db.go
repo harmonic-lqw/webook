@@ -9,27 +9,43 @@ import (
 	"gorm.io/plugin/prometheus"
 	"webook/interactive/repository/dao"
 	"webook/pkg/gormx"
+	"webook/pkg/gormx/connpool"
 	"webook/pkg/logger"
 )
 
-func InitDB(l logger.LoggerV1) *gorm.DB {
+type SrcDB *gorm.DB
+type DstDB *gorm.DB
+
+func InitSrcDB(l logger.LoggerV1) SrcDB {
+	return initDB(l, "src")
+}
+
+func InitDstDB(l logger.LoggerV1) DstDB {
+	return initDB(l, "dst")
+}
+
+func InitBizDB(connPool *connpool.DoubleWritePool) *gorm.DB {
+	doubleWriteDB, err := gorm.Open(mysql.New(mysql.Config{
+		Conn: connPool,
+	}))
+	if err != nil {
+		panic(err)
+	}
+	return doubleWriteDB
+}
+
+func initDB(l logger.LoggerV1, key string) *gorm.DB {
 	type Config struct {
 		DSN string
 	}
 	var cfg Config = Config{
 		DSN: "root:123456@tcp(localhost:13316)/webook", // 默认值
 	}
-	err := viper.UnmarshalKey("db", &cfg)
+	err := viper.UnmarshalKey("db."+key, &cfg)
 	if err != nil {
 		panic(err)
 	}
-	db, err := gorm.Open(mysql.Open(cfg.DSN), &gorm.Config{
-		//Logger: glogger.New(gormLoggerFunc(l.Debug), glogger.Config{
-		//	// 慢查询
-		//	SlowThreshold: 0,
-		//	LogLevel:      glogger.Info,
-		//}),
-	})
+	db, err := gorm.Open(mysql.Open(cfg.DSN), &gorm.Config{})
 	//db, err := gorm.Open(mysql.Open(config.NoKSConfig.DB.DSN))
 	if err != nil {
 		panic(err)
@@ -37,7 +53,7 @@ func InitDB(l logger.LoggerV1) *gorm.DB {
 
 	// 接入prometheus
 	err = db.Use(prometheus.New(prometheus.Config{
-		DBName:          "webook",
+		DBName:          "webook_" + key,
 		RefreshInterval: 15,
 		MetricsCollector: []prometheus.MetricsCollector{
 			&prometheus.MySQL{
@@ -51,9 +67,9 @@ func InitDB(l logger.LoggerV1) *gorm.DB {
 
 	// 通过 callback 对数据库连接时间进行监控
 	cb := gormx.NewCallbacks(prometheus2.SummaryOpts{
-		Namespace: "geektime_daming",
+		Namespace: "harmonic",
 		Subsystem: "webook",
-		Name:      "gorm_db",
+		Name:      "gorm_db_" + key,
 		Help:      "统计 GORM 的数据库查询",
 		ConstLabels: map[string]string{
 			"instance_id": "my_instance",
@@ -72,8 +88,9 @@ func InitDB(l logger.LoggerV1) *gorm.DB {
 	}
 
 	// GORM 中接入 OpenTelemetry
-	db.Use(tracing.NewPlugin(tracing.WithoutMetrics(),
-		tracing.WithDBName("webook")))
+	err = db.Use(tracing.NewPlugin(
+		tracing.WithoutMetrics(),
+		tracing.WithDBName("webook"+key)))
 	if err != nil {
 		panic(err)
 	}
