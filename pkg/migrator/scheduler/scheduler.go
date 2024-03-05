@@ -172,6 +172,7 @@ func (s *Scheduler[T]) StartFullValidation(c *gin.Context) (ginx.Result, error) 
 	}
 	var ctx context.Context
 	ctx, s.cancelFull = context.WithCancel(context.Background())
+	v.Full()
 
 	go func() {
 		// 先取消上一次的
