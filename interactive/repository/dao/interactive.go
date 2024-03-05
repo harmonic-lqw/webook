@@ -194,8 +194,8 @@ func (g *GORMInteractiveDAO) IncrReadCnt(ctx context.Context, biz string, bizId 
 type UserLikeBiz struct {
 	Id int64 `gorm:"primaryKey, autoIncrement"`
 
-	Uid   int64  `gorm:"uniqueIndex:uid_biz_type_id:255"`
-	BizId int64  `gorm:"uniqueIndex:uid_biz_type_id:255"`
+	Uid   int64  `gorm:"uniqueIndex:uid_biz_type_id"`
+	BizId int64  `gorm:"uniqueIndex:uid_biz_type_id"`
 	Biz   string `gorm:"type=varchar(1024), uniqueIndex:uid_biz_type_id:255"`
 	// 标记软删除
 	Status uint8
@@ -207,8 +207,8 @@ type UserLikeBiz struct {
 type UserCollectionBiz struct {
 	Id int64 `gorm:"primaryKey, autoIncrement"`
 
-	Uid   int64  `gorm:"uniqueIndex:uid_biz_type_id:255"`
-	BizId int64  `gorm:"uniqueIndex:uid_biz_type_id:255"`
+	Uid   int64  `gorm:"uniqueIndex:uid_biz_type_id"`
+	BizId int64  `gorm:"uniqueIndex:uid_biz_type_id"`
 	Biz   string `gorm:"type=varchar(1024), uniqueIndex:uid_biz_type_id:255"`
 	// 收藏夹 ID
 	Cid   int64 `gorm:"index"`
@@ -220,7 +220,7 @@ type Interactive struct {
 	Id int64 `gorm:"primaryKey, autoIncrement"`
 
 	// 创建联合索引 <bizid, biz>
-	BizId int64  `gorm:"uniqueIndex:biz_type_id:255"`
+	BizId int64  `gorm:"uniqueIndex:biz_type_id"`
 	Biz   string `gorm:"type=varchar(1024), uniqueIndex:biz_type_id:255"`
 
 	ReadCnt    int64
