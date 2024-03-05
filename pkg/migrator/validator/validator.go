@@ -67,7 +67,7 @@ func (v *Validator[T]) Validate(ctx context.Context) error {
 	return eg.Wait()
 }
 
-// assignment 12
+// week13 assignment 12
 func (v *Validator[T]) validateBaseToTargetBatch(ctx context.Context) error {
 	offset := 0
 	for {

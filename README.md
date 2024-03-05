@@ -122,3 +122,8 @@ a book not for read
 + ![5](README.assets/5.png)
 
   
+
+## week13
+
++ `pkg/migrator/validator/validator.go`文件下的`validateBaseToTargetBatch`方法
++ https://github.com/harmonic-lqw/webook/blob/main/pkg/migrator/validator/validator.go
