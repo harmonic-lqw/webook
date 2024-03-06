@@ -8,7 +8,6 @@ package main
 
 import (
 	"github.com/google/wire"
-	"webook/interactive/events"
 	repository2 "webook/interactive/repository"
 	cache2 "webook/interactive/repository/cache"
 	dao2 "webook/interactive/repository/dao"
@@ -53,15 +52,11 @@ func InitWebServer() *App {
 	syncProducer := ioc.InitSyncProducer(client)
 	producer := article.NewSaramaSyncProducer(syncProducer)
 	articleService := service.NewArticleService(articleRepository, producer)
-	interactiveDAO := dao2.NewGORMInteractiveDAO(db)
-	interactiveCache := cache2.NewInteractiveRedisCache(cmdable)
-	interactiveRepository := repository2.NewCachedInteractiveRepository(interactiveDAO, interactiveCache, loggerV1)
-	interactiveService := service2.NewInteractiveService(interactiveRepository)
-	interactiveServiceClient := ioc.InitIntrClient(interactiveService)
+	clientv3Client := ioc.InitEtcd()
+	interactiveServiceClient := ioc.InitIntrClientV1(clientv3Client)
 	articleHandler := web.NewArticleHandler(loggerV1, articleService, interactiveServiceClient)
 	engine := ioc.InitWebServer(v, userHandler, oAuth2WechatHandler, articleHandler, loggerV1)
-	interactiveReadEventConsumer := events.NewInteractiveReadEventConsumer(interactiveRepository, client, loggerV1)
-	v2 := ioc.InitConsumers(interactiveReadEventConsumer)
+	v2 := ioc.InitConsumers()
 	rankingCache := cache.NewRankingRedisCache(cmdable)
 	rankingRepository := repository.NewCachedOnlyRankingRepository(rankingCache)
 	rankingService := service.NewBatchRankingService(interactiveServiceClient, articleService, rankingRepository)

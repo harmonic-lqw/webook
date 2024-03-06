@@ -39,7 +39,7 @@ func InitInteractiveAPP() *App {
 	v := ioc.InitConsumers(interactiveReadEventConsumer, fixConsumer)
 	interactiveService := service.NewInteractiveService(interactiveRepository)
 	interactiveServiceServer := grpc.NewInteractiveServiceServer(interactiveService)
-	server := ioc.NewGrpcxServer(interactiveServiceServer)
+	server := ioc.NewGrpcxServer(interactiveServiceServer, loggerV1)
 	syncProducer := ioc.InitSyncProducer(client)
 	producer := ioc.InitInteractiveProducer(syncProducer)
 	ginxServer := ioc.InitGinxServer(loggerV1, srcDB, dstDB, doubleWritePool, producer)

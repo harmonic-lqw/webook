@@ -4,7 +4,6 @@ package main
 
 import (
 	"github.com/google/wire"
-	"webook/interactive/events"
 	repository2 "webook/interactive/repository"
 	cache2 "webook/interactive/repository/cache"
 	dao2 "webook/interactive/repository/dao"
@@ -44,7 +43,6 @@ func InitWebServer() *App {
 		// Dao 和 Cache
 		dao.NewUserDAO, dao.NewArticleGORMDAO,
 		cache.NewRedisUserCache, cache.NewRedisCodeCache, cache.NewArticleRedisCache,
-		ioc.InitConsumers,
 		// LocalCodeCache
 		//ioc.InitLRU,
 		//ioc.InitExpireTime,
@@ -56,12 +54,15 @@ func InitWebServer() *App {
 		// Service
 		ioc.InitSMSService, ioc.InitWechatService, service.NewUserService, service.NewCodeService, service.NewArticleService,
 
-		interactiveSvcSet,
+		//interactiveSvcSet,
 
 		// Intr Client
-		ioc.InitIntrClient,
+		//ioc.InitIntrClient,
 		// assignment 11
 		//ioc.InitIntrRepositoryClient,
+		// get intr client from etcd
+		ioc.InitEtcd,
+		ioc.InitIntrClientV1,
 
 		// ranking
 		rankingSvcSet,
@@ -69,8 +70,9 @@ func InitWebServer() *App {
 		ioc.InitJobs,
 
 		article.NewSaramaSyncProducer,
-		events.NewInteractiveReadEventConsumer,
+		//events.NewInteractiveReadEventConsumer,
 		//article.NewBatchInteractiveReadEventConsumer,
+		ioc.InitConsumers,
 
 		// Handler
 		web.NewArticleHandler,

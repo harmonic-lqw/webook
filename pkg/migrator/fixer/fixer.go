@@ -26,7 +26,6 @@ func NewFixer[T migrator.Entity](base *gorm.DB, target *gorm.DB) (*Fixer[T], err
 	rows, err := base.Model(new(T)).Order("id").Rows()
 	if err != nil {
 		return nil, err
-
 	}
 	columns, err := rows.Columns()
 	return &Fixer[T]{base: base,

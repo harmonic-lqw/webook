@@ -5,16 +5,30 @@ import (
 	"google.golang.org/grpc"
 	grpc2 "webook/interactive/grpc"
 	"webook/pkg/grpcx"
+	"webook/pkg/logger"
 )
 
-func NewGrpcxServer(intrSvc *grpc2.InteractiveServiceServer) *grpcx.Server {
+func NewGrpcxServer(intrSvc *grpc2.InteractiveServiceServer, l logger.LoggerV1) *grpcx.Server {
+	type Config struct {
+		Port     int    `yaml:"port"`
+		EtcdAddr string `yaml:"etcdAddr"`
+		Name     string `yaml:"name"`
+	}
+
 	server := grpc.NewServer()
 	// 反向注册
 	intrSvc.Register(server)
-	addr := viper.GetString("grpc.server.addr")
+	var cfg Config
+	err := viper.UnmarshalKey("grpc.server", &cfg)
+	if err != nil {
+		panic(err)
+	}
 	return &grpcx.Server{
-		Server: server,
-		Addr:   addr,
+		Server:   server,
+		EtcdAddr: cfg.EtcdAddr,
+		Port:     cfg.Port,
+		Name:     cfg.Name,
+		L:        l,
 	}
 }
 
@@ -22,9 +36,7 @@ func NewGrpcxRepoServer(intrRepo *grpc2.InteractiveRepositoryServer) *grpcx.Serv
 	server := grpc.NewServer()
 	// 反向注册
 	intrRepo.Register(server)
-	addr := viper.GetString("grpc.server.addr")
 	return &grpcx.Server{
 		Server: server,
-		Addr:   addr,
 	}
 }

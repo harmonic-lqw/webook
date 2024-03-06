@@ -16,7 +16,10 @@ kafka:
 
 grpc:
   server:
-    addr: "localhost:8090"
+    etcdAddr: "localhost:12379"
+    port: 8090
+    name: "interactive"
+
 
 migrator:
   http:
