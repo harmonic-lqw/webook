@@ -92,7 +92,7 @@ func (s *EtcdTestSuite) TestEtcdServer() {
 		}
 	}()
 
-	// 这里的注册是开启服务器
+	// 这里的注册是开启微服务
 	server := grpc.NewServer()
 	RegisterUserServiceServer(server, &Server{})
 	server.Serve(l)
