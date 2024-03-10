@@ -18,6 +18,8 @@ type InteractiveDAO interface {
 	GetCollectInfo(ctx context.Context, biz string, bizId int64, uid int64) (UserCollectionBiz, error)
 	Get(ctx context.Context, biz string, bizId int64) (Interactive, error)
 	GetByIds(ctx context.Context, biz string, bizIds []int64) ([]Interactive, error)
+
+	// GetTopNLike assignment week9
 	GetTopNLike(ctx context.Context) ([]Interactive, error)
 }
 

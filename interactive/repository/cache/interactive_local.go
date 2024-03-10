@@ -17,7 +17,7 @@ type InteractiveLocalCache struct {
 func NewInteractiveLocalCache(topLike *atomicx.Value[[]domain.Interactive], ddl *atomicx.Value[time.Time]) *InteractiveLocalCache {
 	return &InteractiveLocalCache{topLike: topLike,
 		ddl: atomicx.NewValue[time.Time](),
-		expiration: time.Hour * 24 * 7}
+		expiration: time.Hour * 24}
 }
 
 func (i *InteractiveLocalCache) IncrReadCntIfPresent(ctx context.Context, biz string, bizId int64) error {

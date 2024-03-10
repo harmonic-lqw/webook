@@ -121,7 +121,7 @@ func (i *InteractiveRedisCache) SetTopNLike(ctx context.Context, intrs []domain.
 	if err != nil {
 		return err
 	}
-	return i.client.Set(ctx, key, val, time.Hour * 24 * 7).Err()
+	return i.client.Set(ctx, key, val, time.Hour * 24).Err()
 }
 
 func (i *InteractiveRedisCache) topLikeKey() string {
