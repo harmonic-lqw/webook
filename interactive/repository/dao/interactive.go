@@ -18,6 +18,7 @@ type InteractiveDAO interface {
 	GetCollectInfo(ctx context.Context, biz string, bizId int64, uid int64) (UserCollectionBiz, error)
 	Get(ctx context.Context, biz string, bizId int64) (Interactive, error)
 	GetByIds(ctx context.Context, biz string, bizIds []int64) ([]Interactive, error)
+	GetTopNLike(ctx context.Context) ([]Interactive, error)
 }
 
 type GORMInteractiveDAO struct {
@@ -224,7 +225,7 @@ type Interactive struct {
 	Biz   string `gorm:"type=varchar(1024), uniqueIndex:biz_type_id:255"`
 
 	ReadCnt    int64
-	LikeCnt    int64
+	LikeCnt    int64 `gorm:"like_cnt"`
 	CollectCnt int64
 	Utime      int64
 	Ctime      int64
@@ -240,4 +241,11 @@ func (i Interactive) CompareTo(dst migrator.Entity) bool {
 		return false
 	}
 	return i == val
+}
+
+// GetTopNLike assignment week9
+func (g *GORMInteractiveDAO) GetTopNLike(ctx context.Context) ([]Interactive, error) {
+	var intrs []Interactive
+	err := g.db.WithContext(ctx).Order("like_cnt").Limit(10).Find(&intrs).Error
+	return intrs, err
 }

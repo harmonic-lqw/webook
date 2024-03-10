@@ -23,9 +23,9 @@ type InteractiveRepository interface {
 	GetByIds(ctx context.Context, biz string, bizIds []int64) ([]domain.Interactive, error)
 
 	// GetTopNLike assignment week9
-	GetTopNLike(ctx context.Context) ([]domain.Article, error)
+	GetTopNLike(ctx context.Context) ([]domain.Interactive, error)
 	// SetTopNLike assignment week9
-	SetTopNLike(ctx context.Context, arts []domain.Article) error
+	SetTopNLike(ctx context.Context) error
 }
 
 type CachedInteractiveRepository struct {
@@ -171,21 +171,43 @@ func NewCachedInteractiveRepositoryV1(dao dao.InteractiveDAO, redisCache *cache.
 }
 
 // GetTopNLike assignment week9
-func (c *CachedInteractiveRepository) GetTopNLike(ctx context.Context) ([]domain.Article, error) {
+func (c *CachedInteractiveRepository) GetTopNLike(ctx context.Context) ([]domain.Interactive, error) {
+	// 先从本地缓存拿
 	res, err := c.localCache.GetTopNLike(ctx)
 	if err == nil {
 		return res, nil
 	}
+	// 再从 redis 中拿
 	res, err = c.redisCache.GetTopNLike(ctx)
-	if err != nil {
-		return []domain.Article{}, err
+	if err == nil {
+		_ = c.localCache.SetTopNLike(ctx, res)
+		return res, nil
 	}
-	_ = c.localCache.SetTopNLike(ctx, res)
-	return res, nil
+
+	// finally get from db
+	intrs, err := c.dao.GetTopNLike(ctx)
+	if err != nil {
+		return []domain.Interactive, err
+	}
+	var doIntrs []domain.Interactive
+	for _, intr := range intrs {
+		doIntrs = append(doIntrs, c.toDomain(intr))
+	}
+
+	_ = c.SetTopNLike(ctx)
+	return doIntrs, nil
 }
 
 // SetTopNLike assignment week9
-func (c *CachedInteractiveRepository) SetTopNLike(ctx context.Context, arts []domain.Article) error {
-	_ = c.localCache.SetTopNLike(ctx, arts)
-	return c.redisCache.SetTopNLike(ctx, arts)
+func (c *CachedInteractiveRepository) SetTopNLike(ctx context.Context) error {
+	intrs, err := c.dao.GetTopNLike(ctx)
+	if err != nil {
+		return err
+	}
+	var doIntrs []domain.Interactive
+	for _, intr := range intrs {
+		doIntrs = append(doIntrs, c.toDomain(intr))
+	}
+	_ = c.localCache.SetTopNLike(ctx, doIntrs)
+	return c.redisCache.SetTopNLike(ctx, doIntrs)
 }

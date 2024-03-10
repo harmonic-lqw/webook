@@ -9,8 +9,15 @@ import (
 )
 
 type InteractiveLocalCache struct {
-	topLike    *atomicx.Value[[]domain.Article]
+	topLike    *atomicx.Value[[]domain.Interactive]
+	ddl *atomicx.Value[time.Time]
 	expiration time.Duration
+}
+
+func NewInteractiveLocalCache(topLike *atomicx.Value[[]domain.Interactive], ddl *atomicx.Value[time.Time]) *InteractiveLocalCache {
+	return &InteractiveLocalCache{topLike: topLike,
+		ddl: atomicx.NewValue[time.Time](),
+		expiration: time.Hour * 24 * 7}
 }
 
 func (i *InteractiveLocalCache) IncrReadCntIfPresent(ctx context.Context, biz string, bizId int64) error {
@@ -44,16 +51,18 @@ func (i *InteractiveLocalCache) Set(ctx context.Context, biz string, bizId int64
 }
 
 // GetTopNLike assignment week9
-func (i *InteractiveLocalCache) GetTopNLike(ctx context.Context) ([]domain.Article, error) {
-	arts := i.topLike.Load()
-	if len(arts) == 0 {
-		return []domain.Article, errors.New("本地未缓存数据")
+func (i *InteractiveLocalCache) GetTopNLike(ctx context.Context) ([]domain.Interactive, error) {
+	intrs := i.topLike.Load()
+	ddl := i.ddl.Load()
+	if len(intrs) == 0 || ddl.Before(time.Now()){
+		return []domain.Interactive, errors.New("本地未缓存数据")
 	}
-	return arts, nil
+	return intrs, nil
 }
 
 // SetTopNLike assignment week9
-func (i *InteractiveLocalCache) SetTopNLike(ctx context.Context, arts []domain.Article) error {
-	i.topLike.Store(arts)
+func (i *InteractiveLocalCache) SetTopNLike(ctx context.Context, intrs []domain.Interactive) error {
+	i.topLike.Store(intrs)
+	i.ddl.Store(time.Now().Add(i.expiration))
 	return nil
 }

@@ -29,9 +29,9 @@ type InteractiveCache interface {
 	Set(ctx context.Context, biz string, bizId int64, intr domain.Interactive) error
 
 	// GetTopNLike assignment week9
-	GetTopNLike(ctx context.Context) ([]domain.Article, error)
+	GetTopNLike(ctx context.Context) ([]domain.Interactive, error)
 	// SetTopNLike assignment week9
-	SetTopNLike(ctx context.Context, arts []domain.Article) error
+	SetTopNLike(ctx context.Context, intrs []domain.Interactive) error
 }
 
 type InteractiveRedisCache struct {
@@ -103,26 +103,25 @@ func (i *InteractiveRedisCache) key(biz string, bizId int64) string {
 }
 
 // GetTopNLike assignment week9
-func (i *InteractiveRedisCache) GetTopNLike(ctx context.Context) ([]domain.Article, error) {
+func (i *InteractiveRedisCache) GetTopNLike(ctx context.Context) ([]domain.Interactive, error) {
 	key := i.topLikeKey()
 	val, err := i.client.Get(ctx, key).Bytes()
 	if err != nil {
-		return []domain.Article, err
+		return []domain.Interactive, err
 	}
-	var res []domain.Article
+	var res []domain.Interactive
 	err = json.Unmarshal(val, &res)
 	return res, err
-
 }
 
 // SetTopNLike assignment week9
-func (i *InteractiveRedisCache) SetTopNLike(ctx context.Context, arts []domain.Article) error {
+func (i *InteractiveRedisCache) SetTopNLike(ctx context.Context, intrs []domain.Interactive) error {
 	key := i.topLikeKey()
-	val, err := json.Marshal(arts)
+	val, err := json.Marshal(intrs)
 	if err != nil {
 		return err
 	}
-	return i.client.Set(ctx, key, val, time.Minute*24).Err()
+	return i.client.Set(ctx, key, val, time.Hour * 24 * 7).Err()
 }
 
 func (i *InteractiveRedisCache) topLikeKey() string {
