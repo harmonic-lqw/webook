@@ -15,6 +15,11 @@ type InteractiveService interface {
 	Collect(ctx context.Context, biz string, bizId, cid, uid int64) error
 	Get(ctx context.Context, biz string, bizId int64, uid int64) (domain.Interactive, error)
 	GetByIds(ctx context.Context, biz string, ids []int64) (map[int64]domain.Interactive, error)
+
+	// GetTopNLike assignment week9
+	GetTopNLike(ctx context.Context) ([]domain.Article, error)
+	// SetTopNLike assignment week9
+	SetTopNLike(ctx context.Context, arts []domain.Article) error
 }
 
 type interactiveService struct {
@@ -31,7 +36,6 @@ func (i *interactiveService) GetByIds(ctx context.Context, biz string, ids []int
 		res[intr.BizId] = intr
 	}
 	return res, nil
-
 }
 
 func (i *interactiveService) Get(ctx context.Context, biz string, bizId int64, uid int64) (domain.Interactive, error) {
@@ -75,4 +79,14 @@ func NewInteractiveService(repo repository.InteractiveRepository) InteractiveSer
 
 func (i *interactiveService) IncrReadCnt(ctx context.Context, biz string, bizId int64) error {
 	return i.repo.IncrReadCnt(ctx, biz, bizId)
+}
+
+// GetTopNLike assignment week9
+func (i *interactiveService) GetTopNLike(ctx context.Context) ([]domain.Article, error) {
+	return i.repo.GetTopNLike(ctx)
+}
+
+// SetTopNLike assignment week9
+func (i *interactiveService) SetTopNLike(ctx context.Context, arts []domain.Article) error {
+	return i.repo.SetTopNLike(ctx, arts)
 }

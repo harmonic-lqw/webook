@@ -21,12 +21,21 @@ type InteractiveRepository interface {
 	Liked(ctx context.Context, biz string, bizId int64, uid int64) (bool, error)
 	Collected(ctx context.Context, biz string, bizId int64, uid int64) (bool, error)
 	GetByIds(ctx context.Context, biz string, bizIds []int64) ([]domain.Interactive, error)
+
+	// GetTopNLike assignment week9
+	GetTopNLike(ctx context.Context) ([]domain.Article, error)
+	// SetTopNLike assignment week9
+	SetTopNLike(ctx context.Context, arts []domain.Article) error
 }
 
 type CachedInteractiveRepository struct {
 	dao   dao.InteractiveDAO
 	cache cache.InteractiveCache
 	l     logger.LoggerV1
+
+	// assignment week9
+	redisCache *cache.InteractiveRedisCache
+	localCache *cache.InteractiveLocalCache
 }
 
 func (c *CachedInteractiveRepository) GetByIds(ctx context.Context, biz string, bizIds []int64) ([]domain.Interactive, error) {
@@ -154,4 +163,29 @@ func (c *CachedInteractiveRepository) toDomain(ie dao.Interactive) domain.Intera
 		LikeCnt:    ie.LikeCnt,
 		CollectCnt: ie.CollectCnt,
 	}
+}
+
+// NewCachedInteractiveRepositoryV1 assignment week9
+func NewCachedInteractiveRepositoryV1(dao dao.InteractiveDAO, redisCache *cache.InteractiveRedisCache, localCache *cache.InteractiveLocalCache, l logger.LoggerV1) InteractiveRepository {
+	return &CachedInteractiveRepository{dao: dao, redisCache: redisCache, localCache: localCache, l: l}
+}
+
+// GetTopNLike assignment week9
+func (c *CachedInteractiveRepository) GetTopNLike(ctx context.Context) ([]domain.Article, error) {
+	res, err := c.localCache.GetTopNLike(ctx)
+	if err == nil {
+		return res, nil
+	}
+	res, err = c.redisCache.GetTopNLike(ctx)
+	if err != nil {
+		return []domain.Article{}, err
+	}
+	_ = c.localCache.SetTopNLike(ctx, res)
+	return res, nil
+}
+
+// SetTopNLike assignment week9
+func (c *CachedInteractiveRepository) SetTopNLike(ctx context.Context, arts []domain.Article) error {
+	_ = c.localCache.SetTopNLike(ctx, arts)
+	return c.redisCache.SetTopNLike(ctx, arts)
 }

@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"github.com/redis/go-redis/v9"
 	"strconv"
@@ -26,6 +27,11 @@ type InteractiveCache interface {
 	IncrCollectCntIfPresent(ctx context.Context, biz string, bizId int64) error
 	Get(ctx context.Context, biz string, bizId int64) (domain.Interactive, error)
 	Set(ctx context.Context, biz string, bizId int64, intr domain.Interactive) error
+
+	// GetTopNLike assignment week9
+	GetTopNLike(ctx context.Context) ([]domain.Article, error)
+	// SetTopNLike assignment week9
+	SetTopNLike(ctx context.Context, arts []domain.Article) error
 }
 
 type InteractiveRedisCache struct {
@@ -94,4 +100,31 @@ func (i *InteractiveRedisCache) IncrReadCntIfPresent(ctx context.Context, biz st
 
 func (i *InteractiveRedisCache) key(biz string, bizId int64) string {
 	return fmt.Sprintf("interactive:article:%s:%d", biz, bizId)
+}
+
+// GetTopNLike assignment week9
+func (i *InteractiveRedisCache) GetTopNLike(ctx context.Context) ([]domain.Article, error) {
+	key := i.topLikeKey()
+	val, err := i.client.Get(ctx, key).Bytes()
+	if err != nil {
+		return []domain.Article, err
+	}
+	var res []domain.Article
+	err = json.Unmarshal(val, &res)
+	return res, err
+
+}
+
+// SetTopNLike assignment week9
+func (i *InteractiveRedisCache) SetTopNLike(ctx context.Context, arts []domain.Article) error {
+	key := i.topLikeKey()
+	val, err := json.Marshal(arts)
+	if err != nil {
+		return err
+	}
+	return i.client.Set(ctx, key, val, time.Minute*24).Err()
+}
+
+func (i *InteractiveRedisCache) topLikeKey() string {
+	return fmt.Sprintf("interactive:topN:like")
 }

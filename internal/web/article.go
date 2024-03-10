@@ -50,6 +50,8 @@ func (h *ArticleHandler) RegisterRoutes(server *gin.Engine) {
 	pub.POST("/like", h.Like)
 	pub.POST("/collect", h.Collect)
 
+	// assignment week9
+	pub.POST("")
 }
 
 // Edit 暂时约定，接收 Article 输入，返回文章 ID
