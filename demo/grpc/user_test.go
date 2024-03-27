@@ -35,5 +35,4 @@ func TestClient(t *testing.T) {
 	resp, err := client.GetByID(context.Background(), &GetByIDRequest{Id: 12})
 	require.NoError(t, err)
 	t.Log(resp.User)
-
 }

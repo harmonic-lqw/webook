@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"log"
 	"time"
 	"webook/internal/domain"
@@ -78,6 +79,12 @@ func (repo *CachedUserRepository) FindUserInfoById(ctx context.Context, userID i
 	// err 为 nil ，说明 redis 中有数据且成功查询到，直接返回即可
 	if err == nil {
 		return du, nil
+	}
+
+	// 检测熔断/限流/降级标记位
+	if ctx.Value("downgrade") == "true" {
+		// 降级了
+		return du, errors.New("触发降级，不再查询数据库")
 	}
 
 	// err 不为nil，就要查询数据库
