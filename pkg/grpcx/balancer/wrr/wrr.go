@@ -115,6 +115,7 @@ func (p *Picker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 				// 触发限流
 				// 降低权重
 				maxConn.currentWeight -= maxConn.weight
+				return
 			} else if st.Code() == codes.Unavailable {
 				// 触发熔断
 				// 将该节点移出可用节点列表
@@ -148,11 +149,13 @@ func (p *Picker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 						}
 
 					}
-
 				}()
-
+				return
 			}
-			if maxConn.currentWeight <= 2*total {
+			if err != nil && maxConn.currentWeight > 0 {
+				maxConn.currentWeight -= maxConn.weight
+			}
+			if err == nil && maxConn.currentWeight <= 2*total {
 				maxConn.currentWeight += maxConn.weight
 			}
 		},
