@@ -37,7 +37,6 @@ func (b *InterceptorBuilder) BuildServerUnaryInterceptor() grpc.UnaryServerInter
 	}
 }
 
-
 // BuildServerUnaryInterceptorV1 标记降级
 func (b *InterceptorBuilder) BuildServerUnaryInterceptorV1() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
@@ -47,7 +46,6 @@ func (b *InterceptorBuilder) BuildServerUnaryInterceptorV1() grpc.UnaryServerInt
 			ctx = context.WithValue(ctx, "downgrade", "true")
 		}
 
-		if limited
 		return handler(ctx, req)
 	}
 }

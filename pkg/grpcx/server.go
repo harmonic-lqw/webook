@@ -18,10 +18,13 @@ type Server struct {
 	Port     int
 	EtcdAddr string
 	Name     string
-	client   *etcdv3.Client
+	Client   *etcdv3.Client
 	KaCancel context.CancelFunc
 
 	L logger.LoggerV1
+
+	// ETCD 服务注册租约 TTL
+	EtcdTTL int64
 }
 
 func (s *Server) Serve() error {
@@ -45,14 +48,14 @@ func (s *Server) registerEtcd() error {
 	if err != nil {
 		return err
 	}
-	s.client = etcdClient
+	s.Client = etcdClient
 
-	em, err := endpoints.NewManager(s.client, "service/"+s.Name)
+	em, err := endpoints.NewManager(s.Client, "service/"+s.Name)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	var ttl int64 = 5 // 单位是秒
-	leaseResp, err := s.client.Grant(ctx, ttl)
+	leaseResp, err := s.Client.Grant(ctx, ttl)
 	if err != nil {
 		return err
 	}
@@ -72,7 +75,7 @@ func (s *Server) registerEtcd() error {
 	// 续约
 	kaCtx, kaCancel := context.WithCancel(context.Background())
 	s.KaCancel = kaCancel
-	ch, err := s.client.KeepAlive(kaCtx, leaseResp.ID)
+	ch, err := s.Client.KeepAlive(kaCtx, leaseResp.ID)
 	go func() {
 		for kaResp := range ch {
 			s.L.Debug(kaResp.String())
@@ -86,9 +89,9 @@ func (s *Server) Close() error {
 	if s.KaCancel != nil {
 		s.KaCancel()
 	}
-	if s.client != nil {
+	if s.Client != nil {
 		// 如果采用依赖注入的形式初始化 etcd 客户端，就不需要我去关了
-		return s.client.Close()
+		return s.Client.Close()
 	}
 	s.GracefulStop()
 	return nil

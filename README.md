@@ -127,3 +127,8 @@ a book not for read
 
 + `pkg/migrator/validator/validator.go`文件下的`validateBaseToTargetBatch`方法
 + https://github.com/harmonic-lqw/webook/blob/main/pkg/migrator/validator/validator.go
+
+## week19
+
++ 点赞和收藏的同步方法沿用 `InputAny()`方法
++ 
