@@ -131,4 +131,10 @@ a book not for read
 ## week19
 
 + 点赞和收藏的同步方法沿用 `InputAny()`方法
-+ 
++ 收藏/点赞的索引`json`文件和各自的`DAO`文件
+  + [webook/search/repository/dao/collect_index.json at main · harmonic-lqw/webook (github.com)](https://github.com/harmonic-lqw/webook/blob/main/search/repository/dao/collect_index.json)
+  + [webook/search/repository/dao/like_index.json at main · harmonic-lqw/webook (github.com)](https://github.com/harmonic-lqw/webook/blob/main/search/repository/dao/like_index.json)
+  + [webook/search/repository/dao/collect_es.go at main · harmonic-lqw/webook (github.com)](https://github.com/harmonic-lqw/webook/blob/main/search/repository/dao/collect_es.go)
+  + [webook/search/repository/dao/like_es.go at main · harmonic-lqw/webook (github.com)](https://github.com/harmonic-lqw/webook/blob/main/search/repository/dao/like_es.go)
++ 改进后的文章查询接口
+  + [webook/search/repository/dao/article_es.go at main · harmonic-lqw/webook (github.com)](https://github.com/harmonic-lqw/webook/blob/main/search/repository/dao/article_es.go)

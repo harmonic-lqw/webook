@@ -6,7 +6,7 @@ import (
 	"github.com/olivere/elastic/v7"
 )
 
-const LikeIndexName = "collect_index"
+const LikeIndexName = "like_index"
 
 type LikeESDAO struct {
 	client *elastic.Client
