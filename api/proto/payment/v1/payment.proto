@@ -1,0 +1,44 @@
+syntax="proto3";
+
+
+package pmt.v1;
+option go_package="pmt/v1;pmtv1";
+
+service WechatPaymentService {
+  // 我们认为，Prepay 的请求应该是不同的支付方式都是一样的
+  // 但是响应会是不一样的
+  rpc NativePrePay(PrePayRequest) returns (NativePrePayResponse);
+  rpc GetPayment(GetPaymentRequest) returns (GetPaymentResponse);
+}
+
+message GetPaymentRequest {
+  string biz_trade_no = 1;
+}
+
+message GetPaymentResponse {
+  PaymentStatus status = 1;
+}
+
+enum PaymentStatus {
+  PaymentStatusUnknown = 0;
+  PaymentStatusInit = 1;
+  PaymentStatusSuccess = 2;
+  PaymentStatusFailed = 3;
+  PaymentStatusRefund = 4;
+}
+
+message PrePayRequest {
+  Amount amt = 1;
+  string biz_trade_no = 2;
+  string description = 3;
+}
+
+message Amount {
+  int64 total = 1;
+  string currency = 2;
+}
+
+// 不同的支付方式对应不同的响应
+message NativePrePayResponse {
+  string code_url = 1;
+}

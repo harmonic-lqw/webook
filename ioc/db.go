@@ -16,7 +16,7 @@ import (
 
 func InitDB(l logger.LoggerV1) *gorm.DB {
 	type Config struct {
-		DSN string
+		DSN string `yaml:"dsn"`
 	}
 	var cfg Config = Config{
 		DSN: "root:123456@tcp(localhost:13316)/webook_intr", // 默认值

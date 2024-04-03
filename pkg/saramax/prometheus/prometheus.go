@@ -27,7 +27,6 @@ func (d *Decorator) DecoratorProduceTime(start time.Time) {
 		},
 	}, labels)
 	prometheus.MustRegister(vector)
-
 }
 
 func (d *Decorator) DecoratorConsumeTime(start time.Time) {
@@ -49,5 +48,4 @@ func (d *Decorator) DecoratorConsumeTime(start time.Time) {
 		},
 	}, labels)
 	prometheus.MustRegister(vector)
-
 }

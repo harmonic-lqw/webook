@@ -1,0 +1,19 @@
+db:
+  dsn: "root:123456@tcp(localhost:13316)/webook"
+
+etcd:
+  endpoints:
+    - "localhost:12379"
+
+grpc:
+  server:
+    port: 8098
+    etcdAddr: "localhost:12379"
+    etcdTTL: 60
+
+kafka:
+  addrs:
+    - "localhost:9092"
+
+http:
+  addr: ":8070"

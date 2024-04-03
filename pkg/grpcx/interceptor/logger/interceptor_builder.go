@@ -12,12 +12,18 @@ import (
 	"webook/pkg/logger"
 )
 
-type InterceptorBuilder struct {
+type LogInterceptorBuilder struct {
 	l logger.LoggerV1
 	interceptor.Builder
 }
 
-func (b *InterceptorBuilder) BuildServerUnaryInterceptor() grpc.UnaryServerInterceptor {
+func NewLogInterceptorBuilder(l logger.LoggerV1) *LogInterceptorBuilder {
+	return &LogInterceptorBuilder{
+		l: l,
+	}
+}
+
+func (b *LogInterceptorBuilder) BuildServerUnaryInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		start := time.Now()
 		event := "normal"
@@ -39,7 +45,6 @@ func (b *InterceptorBuilder) BuildServerUnaryInterceptor() grpc.UnaryServerInter
 				err = status.New(codes.Internal, "panic, err"+err.Error()).Err()
 			}
 
-
 			fields := []logger.Field{
 				logger.String("type", "unary"),
 				logger.Int64("cost", cost.Milliseconds()),
@@ -48,12 +53,11 @@ func (b *InterceptorBuilder) BuildServerUnaryInterceptor() grpc.UnaryServerInter
 				// 客户端的信息
 				logger.String("peer", b.PeerName(ctx)),
 				logger.String("peer_ip", b.PeerIP(ctx)),
-
 			}
 			st, _ := status.FromError(err)
 			if st != nil {
 				fields = append(fields, logger.String("code", st.Code().String()))
-				fields = append(fields, logger.String("code_msg", st.Message())
+				fields = append(fields, logger.String("code_msg", st.Message()))
 			}
 
 			b.l.Info("RPC调用", fields...)
