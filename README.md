@@ -138,3 +138,12 @@ a book not for read
   + [webook/search/repository/dao/like_es.go at main · harmonic-lqw/webook (github.com)](https://github.com/harmonic-lqw/webook/blob/main/search/repository/dao/like_es.go)
 + 改进后的文章查询接口
   + [webook/search/repository/dao/article_es.go at main · harmonic-lqw/webook (github.com)](https://github.com/harmonic-lqw/webook/blob/main/search/repository/dao/article_es.go)
+
+## week17
+
++ 支付消息必然发送成功。思路：当发送消息失败时，将消息存储到本地表中，再启一个定时任务轮询该表中未发送的消息进行发送。
+  + 存储消息：[webook/payment/service/wechat/native.go at main · harmonic-lqw/webook (github.com)](https://github.com/harmonic-lqw/webook/blob/main/payment/service/wechat/native.go#L121)
+  + 定时任务：[webook/payment/job/scan_local_message.go at main · harmonic-lqw/webook (github.com)](https://github.com/harmonic-lqw/webook/blob/main/payment/job/scan_local_message.go)
+
++ 对账的幂等性。思路：使用go-zero实现的布隆过滤器在对账前进行判断是否已经核对过该账目。
+  + [webook/reward/service/wechat_native.go at main · harmonic-lqw/webook (github.com)](https://github.com/harmonic-lqw/webook/blob/main/reward/service/wechat_native.go#L127)

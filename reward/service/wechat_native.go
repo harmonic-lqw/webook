@@ -124,7 +124,8 @@ func (s *WechatNativeRewardService) UpdateReward(ctx context.Context, bizTradeNO
 		}
 
 		// 布隆过滤器
-		ok, er := s.bloomFilter.Exists([]byte(s.getBloomKey(r.Target.Biz, r.Target.BizId)))
+		bloomKey := s.getBloomKey(r.Target.Biz, r.Target.BizId)
+		ok, er := s.bloomFilter.Exists([]byte(bloomKey))
 		if er != nil {
 			return er
 		}
@@ -159,6 +160,15 @@ func (s *WechatNativeRewardService) UpdateReward(ctx context.Context, bizTradeNO
 				logger.Error(err))
 			return err
 		}
+
+		// 对账成功，写入布隆过滤器
+		er = s.bloomFilter.Add([]byte(bloomKey))
+		if er != nil {
+			s.l.Error("入账成功但写入布隆过滤器失败",
+				logger.Error(er),
+				logger.String("bloom_key", bloomKey))
+		}
+
 	}
 	return nil
 }
