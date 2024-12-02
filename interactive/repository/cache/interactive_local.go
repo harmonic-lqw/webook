@@ -10,13 +10,13 @@ import (
 
 type InteractiveLocalCache struct {
 	topLike    *atomicx.Value[[]domain.Interactive]
-	ddl *atomicx.Value[time.Time]
+	ddl        *atomicx.Value[time.Time]
 	expiration time.Duration
 }
 
 func NewInteractiveLocalCache(topLike *atomicx.Value[[]domain.Interactive], ddl *atomicx.Value[time.Time]) *InteractiveLocalCache {
 	return &InteractiveLocalCache{topLike: topLike,
-		ddl: atomicx.NewValue[time.Time](),
+		ddl:        atomicx.NewValue[time.Time](),
 		expiration: time.Hour * 24}
 }
 
@@ -54,8 +54,8 @@ func (i *InteractiveLocalCache) Set(ctx context.Context, biz string, bizId int64
 func (i *InteractiveLocalCache) GetTopNLike(ctx context.Context) ([]domain.Interactive, error) {
 	intrs := i.topLike.Load()
 	ddl := i.ddl.Load()
-	if len(intrs) == 0 || ddl.Before(time.Now()){
-		return []domain.Interactive, errors.New("本地未缓存数据")
+	if len(intrs) == 0 || ddl.Before(time.Now()) {
+		return []domain.Interactive{}, errors.New("本地未缓存数据")
 	}
 	return intrs, nil
 }

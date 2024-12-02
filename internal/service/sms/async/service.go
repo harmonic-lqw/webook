@@ -142,6 +142,7 @@ func (s *Service) needAsyncV1() bool {
 		reqCnt := atomic.LoadInt32(&s.reqCnt)
 		now := time.Now()
 		// 至少计算 10 分钟的错误率，期间保持同步发送
+		// 这里也可以加一个判断是否降级的条件，如果触发降级，立即启动异步发送
 		if s.initTime.Add(time.Minute*10).Before(now) && float64(errCnt)/float64(reqCnt) > ErrPercent {
 			// 开启异步发送
 			s.signAsync = true

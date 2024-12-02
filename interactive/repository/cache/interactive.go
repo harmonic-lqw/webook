@@ -32,6 +32,8 @@ type InteractiveCache interface {
 	GetTopNLike(ctx context.Context) ([]domain.Interactive, error)
 	// SetTopNLike assignment week9
 	SetTopNLike(ctx context.Context, intrs []domain.Interactive) error
+	GetTopNLikeZSet(ctx context.Context) ([]domain.Article, error)
+	ReplaceTopNLikeZSet(ctx context.Context, score float64, art domain.Article) error
 }
 
 type InteractiveRedisCache struct {
@@ -42,6 +44,33 @@ func NewInteractiveRedisCache(client redis.Cmdable) InteractiveCache {
 	return &InteractiveRedisCache{
 		client: client,
 	}
+}
+
+func (i *InteractiveRedisCache) GetTopNLikeZSet(ctx context.Context) ([]domain.Article, error) {
+	results, err := i.client.ZRange(ctx, "ranking:top_n", 0, -1).Result()
+	if err != nil {
+		return []domain.Article{}, err
+	}
+	var arts []domain.Article
+	for _, res := range results {
+		var art domain.Article
+		if err := json.Unmarshal([]byte(res), &art); err != nil {
+			return []domain.Article{}, err
+		}
+		arts = append(arts, art)
+	}
+	return arts, nil
+}
+
+func (i *InteractiveRedisCache) ReplaceTopNLikeZSet(ctx context.Context, score float64, art domain.Article) error {
+	val, err := json.Marshal(art)
+	if err != nil {
+		return err
+	}
+	return i.client.ZAdd(ctx, "ranking:top_n", redis.Z{
+		Score:  score,
+		Member: val,
+	}).Err()
 }
 
 func (i *InteractiveRedisCache) Get(ctx context.Context, biz string, bizId int64) (domain.Interactive, error) {
@@ -107,7 +136,7 @@ func (i *InteractiveRedisCache) GetTopNLike(ctx context.Context) ([]domain.Inter
 	key := i.topLikeKey()
 	val, err := i.client.Get(ctx, key).Bytes()
 	if err != nil {
-		return []domain.Interactive, err
+		return []domain.Interactive{}, err
 	}
 	var res []domain.Interactive
 	err = json.Unmarshal(val, &res)
@@ -121,7 +150,7 @@ func (i *InteractiveRedisCache) SetTopNLike(ctx context.Context, intrs []domain.
 	if err != nil {
 		return err
 	}
-	return i.client.Set(ctx, key, val, time.Hour * 24).Err()
+	return i.client.Set(ctx, key, val, time.Hour*24).Err()
 }
 
 func (i *InteractiveRedisCache) topLikeKey() string {

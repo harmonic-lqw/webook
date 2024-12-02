@@ -49,7 +49,6 @@ func main() {
 	//	//})
 
 	server.Run(":8080")
-
 }
 
 func initPrometheus() {

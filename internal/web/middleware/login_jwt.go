@@ -35,7 +35,7 @@ func (m *LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 			return ijwt.JWTKey, nil
 		})
 		if err != nil {
-			// token 无法解析：token 不对， token 是伪造的
+			// token 无法解析：token 不对，token 是伪造的
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}

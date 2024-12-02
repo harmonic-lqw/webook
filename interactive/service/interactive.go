@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"golang.org/x/sync/errgroup"
+	"math"
+	"time"
 	"webook/interactive/domain"
 	"webook/interactive/repository"
 )
@@ -67,6 +69,52 @@ func (i *interactiveService) Collect(ctx context.Context, biz string, bizId, cid
 
 func (i *interactiveService) Like(ctx context.Context, biz string, bizId int64, uid int64) error {
 	return i.repo.IncrLike(ctx, biz, bizId, uid)
+}
+
+func (i *interactiveService) LikeV1(ctx context.Context, biz string, bizId int64, uid int64) error {
+	err := i.repo.IncrLike(ctx, biz, bizId, uid)
+	if err != nil {
+		return err
+	}
+	if biz != "article" {
+		return nil
+	}
+	// 去 Redis 的 ZSET 中拿 topN 的文章
+	arts, err := i.repo.GetTopNLikeZSet(ctx)
+	if err != nil {
+		// 记录一下日志，更新热度失败
+		return nil
+	}
+	var index int
+	var art domain.Article
+	for index, art = range arts {
+		if art.Id == bizId {
+			break
+		}
+		if index == len(arts)-1 {
+			// 什么都不用做，因为点赞的这篇文章不在 ZSET 中
+			return nil
+		}
+	}
+
+	// 更新热度
+	intr, err := i.repo.Get(ctx, biz, bizId)
+	if err != nil {
+		// 记录一下日志，更新热度失败
+		return nil
+	}
+	sc := i.score(intr.LikeCnt, art.Utime)
+	err = i.repo.ReplaceTopNLikeZSet(ctx, sc, art)
+	if err != nil {
+		// 记录一下日志，更新热度失败
+		return nil
+	}
+	return nil
+}
+
+func (i *interactiveService) score(likeCnt int64, utime time.Time) float64 {
+	duration := time.Since(utime).Seconds()
+	return float64(likeCnt-1) / math.Pow(duration+2, 1.5)
 }
 
 func (i *interactiveService) CancelLike(ctx context.Context, biz string, bizId int64, uid int64) error {

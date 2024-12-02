@@ -31,7 +31,6 @@ func (t *TimeoutFailoverSMSService) Send(ctx context.Context, tplId string, args
 		if atomic.CompareAndSwapInt32(&t.idx, idx, newIdx) {
 			// 成功切换
 			atomic.StoreInt32(&t.cnt, 0)
-
 		}
 		idx = newIdx
 	}

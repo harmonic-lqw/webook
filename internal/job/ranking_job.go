@@ -3,7 +3,7 @@ package job
 import (
 	"context"
 	rlock "github.com/gotomicro/redis-lock"
-	"math/rand"
+	"github.com/shirou/gopsutil/mem"
 	"sync"
 	"time"
 	"webook/internal/service"
@@ -49,7 +49,7 @@ func (r *RankingJob) Run() error {
 	r.localLock.Lock()
 	qLock := r.lock
 	if qLock == nil {
-		// Week11作业：有锁时，如果负载过高就放弃抢锁
+		// Week11作业：无锁时，如果负载过高就放弃抢锁
 		if r.load >= 90 {
 			return nil
 		}
@@ -131,12 +131,27 @@ func (r *RankingJob) Close() error {
 
 // RefreshLoad 刷新负载
 func (r *RankingJob) RefreshLoad() {
-	r.load = rand.Intn(100)
+	//r.load = rand.Intn(100)
+
+	// 统计内存使用率作为负载
+	memInfo, err := mem.VirtualMemory()
+	if err != nil {
+		panic(err)
+	}
+	r.load = int(memInfo.UsedPercent)
 	ticker := time.NewTicker(time.Minute)
 	go func() {
 		defer ticker.Stop()
 		for range ticker.C {
-			r.load = rand.Intn(100)
+			//r.load = rand.Intn(100)
+			memInfo, err = mem.VirtualMemory()
+			if err != nil {
+				// 此时继续沿用上一次的统计量
+				r.l.Warn("计算内存使用率失败", logger.Error(err))
+			} else {
+				r.load = int(memInfo.UsedPercent)
+			}
+
 			// 上传负载
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			err := r.svc.SetLoad(ctx, r.nodeId, r.load)

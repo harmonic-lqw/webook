@@ -14,6 +14,16 @@ type RankingLocalCache struct {
 	expiration time.Duration
 }
 
+func (r *RankingLocalCache) SetLoad(ctx context.Context, nodeId int64, load int) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *RankingLocalCache) GetMinLoadNode(ctx context.Context) (int64, int, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (r *RankingLocalCache) Set(ctx context.Context, arts []domain.Article) error {
 	r.topN.Store(arts)
 	r.ddl.Store(time.Now().Add(r.expiration))

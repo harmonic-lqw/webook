@@ -19,9 +19,10 @@ import (
 
 // 总结: opentelemetry 的使用
 // 使用 opentelemetry 来打点要做的就是：
-// 创建对应 span
-// 记得关闭
-// 调用 AddEvent 或 SetAttributes
+// 首先我需要去初始化 resource、propagator、trace provider
+// resource 简单理解就是说明这个应用是什么，propagator 就是在客户端和服务端之间传递链路元数据的（流量来源/trace id/span id），trace provider 就是用来在打点的时候构建 trace 的。
+// 之后在需要打点的地方创建 trace，再创建对应 span（记得关闭）
+// 在这个 span 上去调用 AddEvent 或 SetAttributes。AddEvent 就是强调整个流程中发生某事，SetAttributes 就是强调整个流程上下文中有某些数据。
 // （在 zipkin 中：event 被转成了 Annotation；Attribute 被转成了 Tags）
 
 func TestServer(t *testing.T) {

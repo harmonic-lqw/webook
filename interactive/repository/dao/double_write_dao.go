@@ -19,6 +19,11 @@ type DoubleWriteDAO struct {
 	l logger.LoggerV1
 }
 
+func (d *DoubleWriteDAO) GetTopNLike(ctx context.Context) ([]Interactive, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func NewDoubleWriteDAO(src *gorm.DB, dst *gorm.DB, l logger.LoggerV1) InteractiveDAO {
 	return &DoubleWriteDAO{src: NewGORMInteractiveDAO(src),
 		dst:     NewGORMInteractiveDAO(dst),

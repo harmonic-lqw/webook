@@ -67,6 +67,5 @@ func (b *InterceptorBuilder) BuildServerUnaryInterceptorService() grpc.UnaryServ
 			}
 		}
 		return handler(ctx, req)
-
 	}
 }

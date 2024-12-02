@@ -26,6 +26,9 @@ type InteractiveRepository interface {
 	GetTopNLike(ctx context.Context) ([]domain.Interactive, error)
 	// SetTopNLike assignment week9
 	SetTopNLike(ctx context.Context) error
+
+	GetTopNLikeZSet(ctx context.Context) ([]domain.Article, error)
+	ReplaceTopNLikeZSet(ctx context.Context, score float64, art domain.Article) error
 }
 
 type CachedInteractiveRepository struct {
@@ -187,7 +190,7 @@ func (c *CachedInteractiveRepository) GetTopNLike(ctx context.Context) ([]domain
 	// finally get from db
 	intrs, err := c.dao.GetTopNLike(ctx)
 	if err != nil {
-		return []domain.Interactive, err
+		return []domain.Interactive{}, err
 	}
 	var doIntrs []domain.Interactive
 	for _, intr := range intrs {
@@ -210,4 +213,12 @@ func (c *CachedInteractiveRepository) SetTopNLike(ctx context.Context) error {
 	}
 	_ = c.localCache.SetTopNLike(ctx, doIntrs)
 	return c.redisCache.SetTopNLike(ctx, doIntrs)
+}
+
+func (c *CachedInteractiveRepository) GetTopNLikeZSet(ctx context.Context) ([]domain.Article, error) {
+	return c.cache.GetTopNLikeZSet(ctx)
+}
+
+func (c *CachedInteractiveRepository) ReplaceTopNLikeZSet(ctx context.Context, score float64, art domain.Article) error {
+	return c.cache.ReplaceTopNLikeZSet(ctx, score, art)
 }

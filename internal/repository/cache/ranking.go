@@ -93,3 +93,26 @@ func (r *RankingRedisCache) Set(ctx context.Context, arts []domain.Article) erro
 func (r *RankingRedisCache) nodeKey(nodeId int64) string {
 	return fmt.Sprintf("nodeId:%d", nodeId)
 }
+
+func (r *RankingRedisCache) SetV1(ctx context.Context, score []float64, arts []domain.Article) error {
+	if len(score) != len(arts) {
+		return errors.New("得分数组和文章数组数量不匹配！")
+	}
+	pipe := r.client.TxPipeline()
+	for i, art := range arts {
+		art.Content = art.Abstract()
+		val, err := json.Marshal(art)
+		if err != nil {
+			return err
+		}
+		pipe.ZAdd(ctx, r.key, redis.Z{
+			Score:  score[i],
+			Member: val,
+		})
+	}
+	_, err := pipe.Exec(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}

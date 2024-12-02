@@ -1,17 +1,12 @@
 package wrr
 
 import (
-	"context"
 	"fmt"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"sync"
-	"time"
-	grpc2 "webook/demo/grpc"
 )
 
 const Name = "custom_weighted_round_robin"
@@ -89,11 +84,76 @@ func (p *Picker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 
 	maxConn.currentWeight -= total
 
+	return balancer.PickResult{
+		SubConn: maxConn.SubConn,
+		// 回调函数，表示用选中的那个 SubConn 是否成功
+		Done: func(info balancer.DoneInfo) {
+			err := info.Err
+			if err != nil && maxConn.currentWeight > 0 {
+				st, _ := status.FromError(err)
+				if st.Code() == codes.ResourceExhausted {
+					maxConn.currentWeight = maxConn.weight
+					maxConn.weight = 0
+				} else {
+					maxConn.currentWeight -= maxConn.weight
+				}
+			}
+			if err == nil && maxConn.currentWeight <= 2*total {
+				maxConn.weight = maxConn.currentWeight
+				maxConn.currentWeight += maxConn.weight
+			}
+		},
+	}, nil
+
+	// assignment week16
 	//return balancer.PickResult{
 	//	SubConn: maxConn.SubConn,
 	//	// 回调函数，表示用选中的那个 SubConn 是否成功
 	//	Done: func(info balancer.DoneInfo) {
 	//		err := info.Err
+	//		st, _ := status.FromError(err)
+	//
+	//		if st.Code() == codes.ResourceExhausted {
+	//			// 触发限流
+	//			// 降低权重
+	//			maxConn.currentWeight -= maxConn.weight
+	//			return
+	//		} else if st.Code() == codes.Unavailable {
+	//			// 触发熔断
+	//			// 将该节点移出可用节点列表
+	//			p.lock.Lock()
+	//			defer p.lock.Unlock()
+	//			p.removeWeightConn(&p.conns, maxConn)
+	//
+	//			// 移出后的操作...
+	//			go func() {
+	//				ticker := time.NewTicker(time.Second * 10)
+	//				defer ticker.Stop()
+	//				for {
+	//					select {
+	//					case <-ticker.C:
+	//						// 发送健康请求到服务端
+	//						cc, err := grpc.Dial(maxConn.addr,
+	//							grpc.WithTransportCredentials(insecure.NewCredentials()))
+	//						client := grpc2.NewUserServiceClient(cc)
+	//						_, err = client.GetByID(context.Background(), &grpc2.GetByIDRequest{Id: 123})
+	//
+	//						// 如果返回正常响应，挪回可用节点列表
+	//						if err == nil {
+	//							p.conns = append(p.conns, &weightConn{
+	//								SubConn:       maxConn,
+	//								weight:        maxConn.weight,
+	//								currentWeight: 0,
+	//								addr:          maxConn.addr,
+	//							})
+	//							return
+	//						}
+	//					}
+	//
+	//				}
+	//			}()
+	//			return
+	//		}
 	//		if err != nil && maxConn.currentWeight > 0 {
 	//			maxConn.currentWeight -= maxConn.weight
 	//		}
@@ -102,64 +162,6 @@ func (p *Picker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 	//		}
 	//	},
 	//}, nil
-
-	// assignment week16
-	return balancer.PickResult{
-		SubConn: maxConn.SubConn,
-		// 回调函数，表示用选中的那个 SubConn 是否成功
-		Done: func(info balancer.DoneInfo) {
-			err := info.Err
-			st, _ := status.FromError(err)
-
-			if st.Code() == codes.ResourceExhausted {
-				// 触发限流
-				// 降低权重
-				maxConn.currentWeight -= maxConn.weight
-				return
-			} else if st.Code() == codes.Unavailable {
-				// 触发熔断
-				// 将该节点移出可用节点列表
-				p.lock.Lock()
-				defer p.lock.Unlock()
-				p.removeWeightConn(&p.conns, maxConn)
-
-				// 移出后的操作...
-				go func() {
-					ticker := time.NewTicker(time.Second * 10)
-					defer ticker.Stop()
-					for {
-						select {
-						case <-ticker.C:
-							// 发送健康请求到服务端
-							cc, err := grpc.Dial(maxConn.addr,
-								grpc.WithTransportCredentials(insecure.NewCredentials()))
-							client := grpc2.NewUserServiceClient(cc)
-							_, err = client.GetByID(context.Background(), &grpc2.GetByIDRequest{Id: 123})
-
-							// 如果返回正常响应，挪回可用节点列表
-							if err == nil {
-								p.conns = append(p.conns, &weightConn{
-									SubConn:       maxConn,
-									weight:        maxConn.weight,
-									currentWeight: 0,
-									addr:          maxConn.addr,
-								})
-								return
-							}
-						}
-
-					}
-				}()
-				return
-			}
-			if err != nil && maxConn.currentWeight > 0 {
-				maxConn.currentWeight -= maxConn.weight
-			}
-			if err == nil && maxConn.currentWeight <= 2*total {
-				maxConn.currentWeight += maxConn.weight
-			}
-		},
-	}, nil
 }
 
 type weightConn struct {
